@@ -182,7 +182,6 @@ uv run pytest
 - [Security & governance](docs/security-governance.md) — identity, RBAC, content safety, hardening
 - [WordPress integration](docs/wordpress-integration.md) — plugin vs JS widget, embedding
 - [Security & SLG overlays](docs/security-and-slg-overlays.md)
-- [Demo script](docs/demo-script.md) — ~10-minute executive walkthrough
 - [Assumptions & alternatives](docs/assumptions-and-alternatives.md) — AWS hosting options + production hardening
 
 ## Try the chat endpoint
