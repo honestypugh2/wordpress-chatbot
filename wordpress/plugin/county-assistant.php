@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       County Assistant (Prototype)
  * Plugin URI:        https://county-portal.example.gov
- * Description:       Embeds the County Assistant chatbot and proxies requests to the Azure AI Foundry backend via APIM. Prototype for SLED / county-government demonstration.
+ * Description:       Embeds the County Assistant chatbot and proxies requests to the Azure AI Foundry backend via APIM. Prototype for county-government demonstration.
  * Version:           0.2.0
  * Requires at least: 6.2
  * Requires PHP:      8.0

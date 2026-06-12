@@ -1,7 +1,7 @@
 # Grounding with Bing Custom Search — limitations for .gov / public-sector sites
 
 > **TL;DR** — Grounding with Bing Custom Search only returns results for domains
-> and pages that are **public and already indexed by Bing**. For the typical SLED /
+> and pages that are **public and already indexed by Bing**. For the typical government /
 > county-government scenario (a brand-new or staging site, or a site you want to
 > evaluate *before* go-live), that precondition usually isn't met, so the tool
 > returns **no results** even though it is configured correctly. For owned content,

@@ -51,7 +51,7 @@ At a high level:
 6. **Govern and observe.** Centralize keys/identity, quotas, and telemetry at the gateway.
 
 See [wordpress-integration.md](wordpress-integration.md) and
-[security-and-slg-overlays.md](security-and-slg-overlays.md) for detail.
+[security-and-government-overlays.md](security-and-government-overlays.md) for detail.
 
 ## 4. Recommended implementation pattern: **Hybrid**
 
@@ -61,7 +61,7 @@ Three options were considered:
 | --- | --- | --- |
 | **Foundry SDK first** | Use `azure-ai-projects` (~= 2.2.0) prompt agents as the primary surface. | Strong managed governance, server-side tools, and connections; less local orchestration flexibility. |
 | **Agent Framework first** | Use `agent-framework` (~= 1.8.0) to orchestrate everything client-side. | Maximum orchestration/eval flexibility; you re-own hosting, identity, and governance Foundry would otherwise provide. |
-| **Hybrid** ✅ | Foundry is the system of record (project, model deployment, prompt agent, connections, content safety); Agent Framework is used client-side for multi-step orchestration, tool calling, and local evaluation where it adds value. | Slightly more moving parts, but best fit for a governed SLED prototype that must scale to production. |
+| **Hybrid** ✅ | Foundry is the system of record (project, model deployment, prompt agent, connections, content safety); Agent Framework is used client-side for multi-step orchestration, tool calling, and local evaluation where it adds value. | Slightly more moving parts, but best fit for a governed government prototype that must scale to production. |
 
 **Recommendation: Hybrid.** Rationale:
 
@@ -101,9 +101,9 @@ See [apim/policies/](../apim/policies/) for the applied policies and full refere
 | Observability | App Insights + structured logging | App Insights / OpenTelemetry, dashboards, alerts |
 | Data | Synthetic KB | Governed content pipeline with review/approval |
 
-## 7. SLG / county-government security overlays (summary)
+## 7. Government / county security overlays (summary)
 
-Detailed in [security-and-slg-overlays.md](security-and-slg-overlays.md). Highlights:
+Detailed in [security-and-government-overlays.md](security-and-government-overlays.md). Highlights:
 
 - Data residency & region selection; consider sovereign/government cloud options.
 - PII minimization, retention limits, and transparency to residents.

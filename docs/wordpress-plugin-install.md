@@ -7,7 +7,7 @@
 ## Short answer
 
 The plugin is **not** installed on the real customer site (e.g.
-`staging.venturacounty.gov`) — that site is AWS-hosted and outside our control.
+`staging.customer-county.example.gov`) — that site is AWS-hosted and outside our control.
 Instead, the plugin runs in a **local Dockerized WordPress test harness** that mounts
 the plugin straight from the repo and points it at the **real Azure APIM endpoint**.
 This exercises the full path end to end without needing AWS:

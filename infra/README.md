@@ -24,7 +24,7 @@ The backend orchestrator runs the **same shared code** ([`app.agents.Orchestrato
 
 | `backendHost` | Compute | When to use |
 | --- | --- | --- |
-| `function` *(default)* | Azure Functions, Flex Consumption | Recommended for SLED — serverless, scale-to-zero, matches bursty resident traffic. |
+| `function` *(default)* | Azure Functions, Flex Consumption | Recommended for government workloads — serverless, scale-to-zero, matches bursty resident traffic. |
 | `containerapp` | Azure Container Apps (FastAPI) | Portable / always-on demonstration. Build & push `backendImage` first. |
 | `none` | — | No backend; APIM falls back to the raw Foundry endpoint (widget contract will not match). |
 
@@ -80,7 +80,7 @@ az deployment group create \
 
 Private endpoints / VNet integration, customer-managed keys, WAF, semantic-cache
 Redis for APIM, and sovereign-cloud variants are environment decisions — see
-[../docs/security-and-slg-overlays.md](../docs/security-and-slg-overlays.md) and
+[../docs/security-and-government-overlays.md](../docs/security-and-government-overlays.md) and
 [../docs/assumptions-and-alternatives.md](../docs/assumptions-and-alternatives.md).
 
 > Verify region availability for the chosen model and Foundry API versions before

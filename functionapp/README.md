@@ -1,7 +1,7 @@
 # County Assistant — Azure Functions host (default backend)
 
 Serverless (Flex Consumption) host for the backend orchestrator. This is the
-**default / recommended** compute for the SLED scenario: it scales to zero
+**default / recommended** compute for the government scenario: it scales to zero
 between bursts of resident traffic.
 
 It shares the **same** orchestration code as the FastAPI host — both call

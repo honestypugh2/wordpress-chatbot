@@ -74,5 +74,5 @@ All keep WordPress as the front door; they differ in scalability and hardening.
   human-in-the-loop for sensitive intents; accessibility (WCAG/508) review.
 - **Content:** replace synthetic KB with a governed content pipeline (review/approval).
 
-See [security-and-slg-overlays.md](security-and-slg-overlays.md) and
+See [security-and-government-overlays.md](security-and-government-overlays.md) and
 [architecture-overview.md](architecture-overview.md) for detail.

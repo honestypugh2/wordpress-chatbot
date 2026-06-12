@@ -2,9 +2,9 @@
 
 > Security posture, identity, and governance for the County Assistant prototype.
 > This is a **prototype on synthetic data** (County of Westvale); it demonstrates
-> controls suitable for SLED workloads but makes **no compliance claims**. Deeper
-> SLED-specific overlays (CJIS/IRS-1075/StateRAMP considerations, residency, audit)
-> are in [docs/security-and-slg-overlays.md](docs/security-and-slg-overlays.md).
+> controls suitable for government workloads but makes **no compliance claims**. Deeper
+> government-specific overlays (CJIS/IRS-1075/StateRAMP considerations, residency, audit)
+> are in [docs/security-and-government-overlays.md](docs/security-and-government-overlays.md).
 
 Design principle: **the experience layer (WordPress on AWS) holds no secrets and
 talks to no model directly.** Every request flows through an AI gateway to an
@@ -168,8 +168,8 @@ All downstream auth uses a **user-assigned managed identity** with Entra ID and
 - [ ] Review **data residency** for the Search region against agency requirements
       (Patterns 2 & 3 only).
 - [ ] Rotate the APIM subscription key on a schedule; alert on anomalous usage.
-- [ ] Apply the SLED overlays in
-      [docs/security-and-slg-overlays.md](docs/security-and-slg-overlays.md).
+- [ ] Apply the government overlays in
+      [docs/security-and-government-overlays.md](docs/security-and-government-overlays.md).
 
 > RBAC specifics and deployment steps: [docs/deployment-guide.md](docs/deployment-guide.md).
 > Cost implications of each control/pattern: [docs/cost-model.md](docs/cost-model.md).

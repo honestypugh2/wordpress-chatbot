@@ -21,7 +21,7 @@ edit, then re-export the matching `.svg`.
 | Azure — gateway / app | `#0078D4` | `#004578` |
 | Azure AI Foundry | `#50E6FF` | `#004578` |
 | Grounding / data | `#7FBA00` | `#3A5400` |
-| SLG overlays / security | `#E3008C` | `#6E0044` |
+| Government overlays / security | `#E3008C` | `#6E0044` |
 
 All diagrams are **illustrative**; service choices and network topology are decided per
 deployment. All depicted content is synthetic.

@@ -129,7 +129,7 @@ flowchart LR
 
 ## 3. County-government tailored architecture
 
-Maps the same pattern to county portal categories (synthetic) and adds SLG overlays:
+Maps the same pattern to county portal categories (synthetic) and adds government overlays:
 escalation/human-in-the-loop, audit logging, and PII minimization.
 
 ```mermaid
@@ -161,7 +161,7 @@ flowchart TB
         kb["Synthetic County KB<br/>(departments, services, FAQs)"]
     end
 
-    subgraph OVERLAY["SLG Overlays"]
+    subgraph OVERLAY["Government Overlays"]
         esc["Human-in-the-loop / Escalation<br/>(legal • benefits • emergency)"]
         audit["Audit Log & Retention"]
         pii["PII Minimization"]
@@ -223,7 +223,7 @@ sequenceDiagram
 
 ## Decision record — Gateway: APIM + WordPress plugin proxy
 
-**Decision:** For the SLED (State / Local / Education / Government) scenario, the
+**Decision:** For the government scenario, the
 production front door is the **WordPress plugin proxy (AWS-side) → Azure API
 Management AI Gateway (Azure-side) → Azure AI Foundry**. These are complementary
 layers, not alternatives. **AWS API Gateway is explicitly not used.**
@@ -240,7 +240,7 @@ Browser → WordPress plugin proxy (AWS, hides key) → APIM AI Gateway (Azure, 
   bound model spend against a fixed agency budget. The plugin proxy and AWS API
   Gateway cannot meter tokens or model cost.
 - **Responsible AI** — Content-safety / prompt-shield controls sit in front of the
-  model in APIM, supporting SLED procurement requirements.
+  model in APIM, supporting government procurement requirements.
 - **Governance next to the model** — Model and data live in Azure; keeping the AI
   gateway, managed identity, and logging in Azure avoids stretching trust across
   AWS → Azure.

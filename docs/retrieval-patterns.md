@@ -209,7 +209,7 @@ the **same** WordPress page reflects whichever site the backend is running.
 
 ---
 
-## 3. Comparison for this use case (SLED county portal)
+## 3. Comparison for this use case (county portal)
 
 ### Pros / cons
 

@@ -181,7 +181,7 @@ uv run pytest
 - [Cost model](docs/cost-model.md) — indicative per-pattern cost comparison
 - [Security & governance](docs/security-governance.md) — identity, RBAC, content safety, hardening
 - [WordPress integration](docs/wordpress-integration.md) — plugin vs JS widget, embedding
-- [Security & SLG overlays](docs/security-and-slg-overlays.md)
+- [Security & government overlays](docs/security-and-government-overlays.md)
 - [Assumptions & alternatives](docs/assumptions-and-alternatives.md) — AWS hosting options + production hardening
 
 ## Try the chat endpoint

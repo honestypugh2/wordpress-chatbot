@@ -1,6 +1,6 @@
 // Azure Functions (Flex Consumption) host for the County Assistant backend.
 //
-// This is the DEFAULT/recommended serverless compute for the SLED scenario:
+// This is the DEFAULT/recommended serverless compute for the government scenario:
 // scale-to-zero between bursts of resident traffic. It runs the same shared
 // orchestrator as the Container App option; only the hosting model differs.
 //

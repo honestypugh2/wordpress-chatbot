@@ -1,7 +1,7 @@
-# Security & SLG / County-Government Overlays
+# Security & Government Overlays
 
 > **Guidance, not a compliance attestation.** This document outlines security and
-> state/local-government (SLG) considerations. It does **not** claim conformance with any
+> state/local-government considerations. It does **not** claim conformance with any
 > framework. Engage the jurisdiction's security, privacy, and legal stakeholders before any
 > production use. Some items below are decisions for the jurisdiction rather than defaults.
 
@@ -33,7 +33,7 @@ leakage in public JS, cost/abuse (token flooding), and oversharing of PII.
 - **CORS** restricted to WordPress origin(s); strict methods/headers.
 - See [apim/policies/](../apim/policies/) for the applied policies and full references.
 
-## 4. Data protection & privacy (SLG-sensitive)
+## 4. Data protection & privacy (privacy-sensitive)
 
 - **PII minimization:** don't collect more than needed; redact before logging; avoid storing
   raw transcripts unless there's a defined, lawful purpose and retention limit.
