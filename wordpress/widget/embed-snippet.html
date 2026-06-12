@@ -1,0 +1,21 @@
+<!--
+  County Assistant — copy/paste embed snippet (standalone, browser-direct mode).
+
+  Paste this into a WordPress "Custom HTML" block, a footer widget, or your child
+  theme's footer.php. Host the .js and .css from your own CDN/site.
+
+  IMPORTANT: In browser-direct mode the endpoint must be a PUBLIC, tightly-scoped
+  APIM route (rate-limited + content-safe). Do NOT place a privileged subscription
+  key in public HTML. Prefer the WordPress plugin (proxy mode) for production.
+-->
+<link rel="stylesheet" href="https://your-cdn.example/county-assistant-widget.css" />
+<div id="county-assistant-root"></div>
+<script>
+  window.CountyAssistant = {
+    endpoint: "https://your-apim.azure-api.net/county-assistant/chat",
+    mode: "browser-direct",
+    title: "County Assistant",
+    greeting: "Hi! I can help with county services. Ask me anything."
+  };
+</script>
+<script src="https://your-cdn.example/county-assistant-widget.js" defer></script>

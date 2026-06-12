@@ -1,0 +1,61 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="baseline-architecture" name="Baseline">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="460" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Baseline Architecture — WordPress (AWS) → APIM (AI Gateway) → Azure AI Foundry" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="16" width="760" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="zoneAws" value="AWS — Experience Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9900;verticalAlign=top;fontStyle=1;fontColor=#7A4900;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="70" width="180" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="zoneAzure" value="Azure — Intelligence Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#0078D4;verticalAlign=top;fontStyle=1;fontColor=#004578;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="70" width="600" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="zoneFoundry" value="Azure AI Foundry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#00ACC1;verticalAlign=top;fontStyle=1;fontColor=#004578;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="100" width="280" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="user" value="Resident /&#10;Public User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="20" y="195" width="110" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="wp" value="WordPress Site&#10;+ Chat Widget" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#7A4900;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="170" y="195" width="140" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="apim" value="API Management&#10;(AI Gateway)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="380" y="140" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="func" value="Azure Function&#10;(default backend)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="380" y="260" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="agent" value="County Agent&#10;(prompt agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="680" y="140" width="120" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="model" value="Model&#10;Deployment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="810" y="140" width="110" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="kb" value="Retrieval&#10;(Synthetic County KB)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FBA00;strokeColor=#3A5400;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="700" y="280" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="user" target="wp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="wp" target="apim">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="POST /assistant/chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="apim" target="func">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="func" target="agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="agent" target="model">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="agent" target="kb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

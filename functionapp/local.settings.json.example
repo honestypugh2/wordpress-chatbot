@@ -1,0 +1,23 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "PYTHON_ENABLE_INIT_INDEXING": "1",
+
+    "APP_ENV": "local",
+    "APP_LOG_JSON": "true",
+
+    "FOUNDRY_ENABLED": "false",
+    "AZURE_AI_PROJECT_ENDPOINT": "",
+    "AZURE_AI_MODEL_DEPLOYMENT": "gpt-4o-mini",
+
+    "AZURE_SEARCH_ENDPOINT": "",
+    "AZURE_SEARCH_INDEX": "county-kb",
+    "AZURE_SEARCH_SEMANTIC_CONFIG": "county-semantic",
+    "AZURE_EMBEDDING_DEPLOYMENT": "text-embedding-3-small",
+    "RAG_VECTOR_ENABLED": "false",
+
+    "AZURE_CLIENT_ID": ""
+  }
+}

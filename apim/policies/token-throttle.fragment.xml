@@ -1,0 +1,19 @@
+<!--
+  Fragment: token-based throttling for LLM cost control.
+  Uses the APIM AI-gateway token-limit policy to meter prompt+completion tokens.
+  Requires APIM with AI gateway capabilities and a token-metering-capable backend.
+-->
+<fragment>
+  <azure-openai-token-limit
+    counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+    tokens-per-minute="20000"
+    estimate-prompt-tokens="true"
+    tokens-consumed-header-name="x-tokens-consumed"
+    remaining-tokens-header-name="x-tokens-remaining" />
+
+  <!-- Optional: emit token usage as metrics for FinOps dashboards. -->
+  <azure-openai-emit-token-metric namespace="county-assistant">
+    <dimension name="Subscription" value="@(context.Subscription?.Id ?? "anonymous")" />
+    <dimension name="Operation" value="@(context.Operation.Name)" />
+  </azure-openai-emit-token-metric>
+</fragment>

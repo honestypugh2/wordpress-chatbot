@@ -1,0 +1,34 @@
+# Build context exclusions for the backend image.
+.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# VCS / editor
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Local secrets and env
+.env
+.env.*
+!.env.example
+
+# Docs and non-runtime assets (keep the image small)
+docs/
+images/
+tests/
+examples/
+wordpress/
+apim/
+infra/
+scripts/
+
+# Misc
+*.md
+!README.md
+Dockerfile
+.dockerignore

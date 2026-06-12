@@ -1,0 +1,114 @@
+[project]
+name = "wordpress-chatbot"
+version = "0.1.0"
+description = "Azure AI Foundry chatbot/agent applied to an AWS-hosted WordPress site for a SLED / county-government scenario."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Principal AI Architecture Team" }]
+keywords = [
+    "azure-ai-foundry",
+    "wordpress",
+    "chatbot",
+    "agent",
+    "rag",
+    "apim",
+    "sled",
+    "government",
+]
+
+# NOTE: Version baselines below are the requested prototype targets.
+# Verify the latest stable releases at implementation time before pinning.
+dependencies = [
+    "azure-ai-projects~=2.2.0",
+    "agent-framework~=1.8.0",
+    "azure-identity>=1.19,<2.0",
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.32,<1.0",
+    "pydantic>=2.9,<3.0",
+    "pydantic-settings>=2.6,<3.0",
+    "httpx>=0.27,<1.0",
+    "python-dotenv>=1.0,<2.0",
+    "structlog>=24.4,<25.0",
+]
+
+[project.optional-dependencies]
+rag = [
+    # Retrieval / RAG building blocks (Azure AI Search etc.). Placeholder baselines.
+    "azure-search-documents>=11.5,<12.0",
+]
+functions = [
+    # Azure Functions (Flex Consumption) host — the default serverless backend.
+    # The function host reuses the shared `app` orchestrator package.
+    "azure-functions>=1.21,<2.0",
+]
+
+[dependency-groups]
+# UV-native dev dependency group (uv ~= 0.11.19).
+dev = [
+    "pytest>=8.3,<9.0",
+    "pytest-asyncio>=0.24,<1.0",
+    "ruff>=0.8,<1.0",
+    "mypy>=1.13,<2.0",
+    "httpx>=0.27,<1.0",
+]
+
+[project.urls]
+Documentation = "./docs/architecture-overview.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]
+
+# ---------------------------------------------------------------------------
+# uv configuration
+# ---------------------------------------------------------------------------
+# The Azure AI SDKs that anchor this prototype (agent-framework and the
+# azure-ai-* preview packages) currently publish only pre-release builds, so
+# resolution must allow pre-releases. The committed uv.lock still pins exact
+# versions, so installs remain reproducible.
+[tool.uv]
+prerelease = "allow"
+
+# ---------------------------------------------------------------------------
+# Tooling configuration
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["app"]
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+show_error_codes = true
+ignore_missing_imports = true
+
+# numpy (pulled in transitively by agent-framework) ships py.typed stubs that use
+# Python 3.12 `type` statements, which trip mypy when targeting 3.11. We don't
+# type-check against numpy directly, so skip following its stubs.
+[[tool.mypy.overrides]]
+module = ["numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"

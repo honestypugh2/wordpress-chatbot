@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 540" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#37474F"/>
+    </marker>
+    <marker id="arrd" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#8E24AA"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1240" height="540" fill="#ffffff"/>
+  <text x="20" y="32" font-size="16" font-weight="bold" fill="#1b1b1b">Advanced Architecture — full Azure intelligence layer (mapped to infra/ Bicep modules)</text>
+
+  <!-- zones -->
+  <rect x="140" y="60" width="210" height="270" rx="10" fill="#FFF3E0" stroke="#FF9900" stroke-dasharray="6 4"/>
+  <text x="245" y="78" font-size="12" font-weight="bold" fill="#7A4900" text-anchor="middle">AWS — Experience Layer</text>
+  <rect x="380" y="60" width="250" height="270" rx="10" fill="#E3F2FD" stroke="#0078D4" stroke-dasharray="6 4"/>
+  <text x="505" y="78" font-size="12" font-weight="bold" fill="#004578" text-anchor="middle">Azure API Management — AI Gateway</text>
+  <rect x="660" y="60" width="240" height="270" rx="10" fill="#E3F2FD" stroke="#0078D4" stroke-dasharray="6 4"/>
+  <text x="780" y="78" font-size="12" font-weight="bold" fill="#004578" text-anchor="middle">Azure — Application (backend host)</text>
+  <rect x="930" y="60" width="290" height="270" rx="10" fill="#E0F7FA" stroke="#00ACC1" stroke-dasharray="6 4"/>
+  <text x="1075" y="78" font-size="12" font-weight="bold" fill="#004578" text-anchor="middle">Azure AI Foundry — Intelligence Layer</text>
+  <rect x="380" y="360" width="520" height="160" rx="10" fill="#F1F8E9" stroke="#7FBA00" stroke-dasharray="6 4"/>
+  <text x="505" y="378" font-size="12" font-weight="bold" fill="#3A5400" text-anchor="middle">Grounding &amp; Data</text>
+  <rect x="930" y="360" width="290" height="160" rx="10" fill="#F3E5F5" stroke="#8E24AA" stroke-dasharray="6 4"/>
+  <text x="1075" y="378" font-size="12" font-weight="bold" fill="#4A148C" text-anchor="middle">Observability (monitoring.bicep)</text>
+
+  <!-- solid edges -->
+  <g stroke="#37474F" stroke-width="2" fill="none">
+    <path d="M120,185 L150,185 L150,122 L160,122" marker-end="url(#arr)"/>
+    <path d="M245,144 L245,165" marker-end="url(#arr)"/>
+    <path d="M245,221 L245,245" marker-end="url(#arr)"/>
+    <path d="M330,267 L360,267 L360,144 L400,144" marker-end="url(#arr)"/>
+    <path d="M610,144 L645,144 L645,122 L680,122" marker-end="url(#arr)"/>
+    <path d="M880,122 L950,122" marker-end="url(#arr)"/>
+    <path d="M1010,144 L1010,156" marker-end="url(#arr)"/>
+    <path d="M1140,144 L1140,156" marker-end="url(#arr)"/>
+    <path d="M1075,144 L1075,225" marker-end="url(#arr)"/>
+    <path d="M680,122 L650,122 L650,209 L610,209" marker-end="url(#arr)"/>
+    <path d="M505,233 L505,348 L1010,348 L1010,212" marker-end="url(#arr)"/>
+    <path d="M965,269 L965,336 L515,336 L515,400" marker-end="url(#arr)"/>
+    <path d="M980,269 L980,342 L388,342 L388,482 L400,482" marker-end="url(#arr)"/>
+    <path d="M650,424 L645,424" marker-end="url(#arr)"/>
+  </g>
+  <text x="618" y="112" font-size="10" fill="#37474F">backend routing</text>
+  <text x="556" y="247" font-size="10" fill="#37474F">model calls via gateway</text>
+  <text x="660" y="418" font-size="10" fill="#37474F" text-anchor="end">ingest</text>
+
+  <!-- dashed cross-cutting edges -->
+  <g stroke="#8E24AA" stroke-width="1.6" fill="none" stroke-dasharray="5 4">
+    <path d="M765,144 L740,215" marker-end="url(#arrd)"/>
+    <path d="M800,144 L825,215" marker-end="url(#arrd)"/>
+    <path d="M820,144 L820,354 L1075,354 L1075,400" marker-end="url(#arrd)"/>
+    <path d="M505,233 L505,360 L1075,360 L1075,400" marker-end="url(#arrd)"/>
+    <path d="M1075,444 L1075,458" marker-end="url(#arrd)"/>
+  </g>
+  <text x="828" y="350" font-size="10" fill="#8E24AA">telemetry</text>
+  <text x="512" y="372" font-size="10" fill="#8E24AA">token metrics</text>
+
+  <!-- AWS nodes -->
+  <ellipse cx="70" cy="190" rx="50" ry="30" fill="#ECEFF1" stroke="#607D8B" stroke-width="2"/>
+  <text x="70" y="186" font-size="11" fill="#263238" text-anchor="middle">Resident /</text>
+  <text x="70" y="200" font-size="11" fill="#263238" text-anchor="middle">Public User</text>
+  <rect x="160" y="100" width="170" height="44" rx="8" fill="#FF9900" stroke="#7A4900" stroke-width="2"/>
+  <text x="245" y="126" font-size="12" fill="#1b1b1b" text-anchor="middle">CloudFront / WAF</text>
+  <rect x="160" y="165" width="170" height="56" rx="8" fill="#FF9900" stroke="#7A4900" stroke-width="2"/>
+  <text x="245" y="188" font-size="11" fill="#1b1b1b" text-anchor="middle">WordPress + Plugin Proxy</text>
+  <text x="245" y="203" font-size="11" fill="#1b1b1b" text-anchor="middle">(server-side APIM key)</text>
+  <rect x="160" y="245" width="170" height="44" rx="8" fill="#FFB74D" stroke="#7A4900" stroke-width="2"/>
+  <text x="245" y="271" font-size="12" fill="#1b1b1b" text-anchor="middle">Chat Widget</text>
+
+  <!-- Gateway nodes -->
+  <rect x="400" y="120" width="210" height="48" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="505" y="140" font-size="11" fill="#fff" text-anchor="middle">Chat API</text>
+  <text x="505" y="155" font-size="11" fill="#fff" text-anchor="middle">POST /assistant/chat</text>
+  <rect x="400" y="185" width="210" height="48" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="505" y="205" font-size="11" fill="#fff" text-anchor="middle">Model API  /openai</text>
+  <text x="505" y="220" font-size="11" fill="#fff" text-anchor="middle">managed-identity backend auth</text>
+  <text x="505" y="285" font-size="10" fill="#004578" text-anchor="middle">auth • rate limit • token-limit</text>
+  <text x="505" y="299" font-size="10" fill="#004578" text-anchor="middle">token-metrics • content safety • logging</text>
+
+  <!-- App nodes -->
+  <rect x="680" y="100" width="200" height="44" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="780" y="118" font-size="11" fill="#fff" text-anchor="middle">Azure Function (Flex)</text>
+  <text x="780" y="133" font-size="10" fill="#cfe8ff" text-anchor="middle">default — functionapp.bicep</text>
+  <rect x="680" y="156" width="200" height="44" rx="8" fill="#90CAF9" stroke="#004578" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="780" y="174" font-size="11" fill="#0D3C61" text-anchor="middle">Container Apps (FastAPI)</text>
+  <text x="780" y="189" font-size="10" fill="#0D3C61" text-anchor="middle">alt — containerapp.bicep</text>
+  <rect x="680" y="215" width="95" height="56" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="727" y="239" font-size="11" fill="#fff" text-anchor="middle">Managed</text>
+  <text x="727" y="253" font-size="11" fill="#fff" text-anchor="middle">Identity</text>
+  <rect x="785" y="215" width="95" height="56" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="832" y="239" font-size="11" fill="#fff" text-anchor="middle">Key Vault</text>
+  <text x="832" y="253" font-size="10" fill="#cfe8ff" text-anchor="middle">keyvault.bicep</text>
+
+  <!-- Foundry nodes -->
+  <rect x="950" y="100" width="250" height="44" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+  <text x="1075" y="120" font-size="11" fill="#1b1b1b" text-anchor="middle">County Agent (prompt agent)</text>
+  <text x="1075" y="135" font-size="10" fill="#1b1b1b" text-anchor="middle">foundry.bicep</text>
+  <rect x="950" y="156" width="120" height="56" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+  <text x="1010" y="180" font-size="11" fill="#1b1b1b" text-anchor="middle">Model</text>
+  <text x="1010" y="194" font-size="10" fill="#1b1b1b" text-anchor="middle">Deployment(s)</text>
+  <rect x="1080" y="156" width="120" height="56" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+  <text x="1140" y="180" font-size="11" fill="#1b1b1b" text-anchor="middle">Content Safety</text>
+  <text x="1140" y="194" font-size="10" fill="#1b1b1b" text-anchor="middle">/ prompt shield</text>
+  <rect x="950" y="225" width="250" height="44" rx="8" fill="#80DEEA" stroke="#004578" stroke-width="2"/>
+  <text x="1075" y="244" font-size="11" fill="#1b1b1b" text-anchor="middle">Tools — AI Search tool</text>
+  <text x="1075" y="259" font-size="11" fill="#1b1b1b" text-anchor="middle">• Bing Custom Search tool</text>
+
+  <!-- Data nodes -->
+  <rect x="400" y="400" width="230" height="48" rx="8" fill="#7FBA00" stroke="#3A5400" stroke-width="2"/>
+  <text x="515" y="420" font-size="11" fill="#1b1b1b" text-anchor="middle">Azure AI Search</text>
+  <text x="515" y="435" font-size="10" fill="#1b1b1b" text-anchor="middle">(county-kb index) — search.bicep</text>
+  <rect x="400" y="458" width="230" height="48" rx="8" fill="#AED581" stroke="#3A5400" stroke-width="2"/>
+  <text x="515" y="478" font-size="11" fill="#1b1b1b" text-anchor="middle">Grounding with Bing</text>
+  <text x="515" y="493" font-size="10" fill="#1b1b1b" text-anchor="middle">Custom Search (preview)</text>
+  <rect x="650" y="400" width="230" height="48" rx="8" fill="#7FBA00" stroke="#3A5400" stroke-width="2"/>
+  <text x="765" y="420" font-size="11" fill="#1b1b1b" text-anchor="middle">Synthetic KB Source</text>
+  <text x="765" y="435" font-size="10" fill="#1b1b1b" text-anchor="middle">(data/county_kb)</text>
+  <rect x="650" y="458" width="230" height="48" rx="8" fill="#AED581" stroke="#3A5400" stroke-width="2"/>
+  <text x="765" y="478" font-size="11" fill="#1b1b1b" text-anchor="middle">Function Storage</text>
+  <text x="765" y="493" font-size="10" fill="#1b1b1b" text-anchor="middle">(identity-based, Flex)</text>
+
+  <!-- Observability nodes -->
+  <rect x="950" y="400" width="250" height="44" rx="8" fill="#AB47BC" stroke="#4A148C" stroke-width="2"/>
+  <text x="1075" y="426" font-size="12" fill="#fff" text-anchor="middle">Application Insights</text>
+  <rect x="950" y="458" width="250" height="44" rx="8" fill="#AB47BC" stroke="#4A148C" stroke-width="2"/>
+  <text x="1075" y="484" font-size="12" fill="#fff" text-anchor="middle">Log Analytics Workspace</text>
+</svg>

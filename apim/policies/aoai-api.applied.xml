@@ -1,0 +1,51 @@
+<!--
+  PHASE 1 (applied) AI-gateway governance policy for the Azure OpenAI inference
+  API (path: /aoai).
+
+  This is the runnable subset that is live right now, BEFORE Azure Managed Redis
+  is attached as an APIM external cache. It already delivers real governance:
+
+    * authentication-managed-identity  -> APIM calls Foundry with its managed
+                                          identity (resource cognitiveservices),
+                                          so no model keys travel on the wire.
+    * set-backend-service              -> routes to aoai-backend
+                                          (Foundry Azure OpenAI /openai endpoint).
+    * azure-openai-token-limit         -> 20000 tokens-per-minute per caller, with
+                                          remaining/consumed-token response headers
+                                          and automatic 429 enforcement.
+    * azure-openai-emit-token-metric   -> token usage metrics to Application
+                                          Insights (logger: appinsights).
+
+  The semantic-cache-lookup / semantic-cache-store elements from
+  aoai-api.policy.xml are intentionally omitted here because they require an
+  external Redis cache with the RediSearch module. They are added in phase 2
+  once Azure Managed Redis (wpcounty-amr-mro5df) is provisioned and registered
+  as an APIM external cache.
+-->
+<policies>
+    <inbound>
+        <base />
+        <set-backend-service backend-id="aoai-backend" />
+        <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+        <azure-openai-token-limit
+            counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+            tokens-per-minute="20000"
+            estimate-prompt-tokens="false"
+            remaining-tokens-header-name="x-ratelimit-remaining-tokens"
+            tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+        <azure-openai-emit-token-metric namespace="genai">
+            <dimension name="API ID" />
+            <dimension name="Operation ID" />
+            <dimension name="Subscription ID" />
+        </azure-openai-emit-token-metric>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

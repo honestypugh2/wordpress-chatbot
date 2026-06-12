@@ -1,0 +1,65 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="orchestrator-flow" name="Orchestrator Flow">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1120" pageHeight="1040" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Orchestrator Agent Flow — safety → workflow → retrieval (by pattern) → answer" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="14" width="900" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="start" value="Chat turn — message" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#607D8B;fontColor=#263238;" vertex="1" parent="1"><mxGeometry x="470" y="56" width="200" height="40" as="geometry" /></mxCell>
+        <mxCell id="safety" value="SafetyAgent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#0078D4;fontColor=#0D3C61;" vertex="1" parent="1"><mxGeometry x="490" y="116" width="160" height="40" as="geometry" /></mxCell>
+        <mxCell id="decSafety" value="handled?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontColor=#7A4900;" vertex="1" parent="1"><mxGeometry x="505" y="176" width="130" height="64" as="geometry" /></mxCell>
+        <mxCell id="outSafety" value="Return safety response&#10;(emergency / blocked / too long)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;fontColor=#7B1313;" vertex="1" parent="1"><mxGeometry x="720" y="184" width="200" height="48" as="geometry" /></mxCell>
+        <mxCell id="workflow" value="WorkflowAgent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#0078D4;fontColor=#0D3C61;" vertex="1" parent="1"><mxGeometry x="490" y="272" width="160" height="40" as="geometry" /></mxCell>
+        <mxCell id="decWf" value="handled?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontColor=#7A4900;" vertex="1" parent="1"><mxGeometry x="505" y="332" width="130" height="64" as="geometry" /></mxCell>
+        <mxCell id="outWf" value="Return workflow response&#10;(actionable intent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;fontColor=#7B1313;" vertex="1" parent="1"><mxGeometry x="720" y="340" width="200" height="48" as="geometry" /></mxCell>
+        <mxCell id="decPattern" value="RETRIEVAL_PATTERN ?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontColor=#7A4900;" vertex="1" parent="1"><mxGeometry x="480" y="428" width="180" height="84" as="geometry" /></mxCell>
+
+        <mxCell id="aiSearch" value="AI Search tool&#10;(prompt agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1"><mxGeometry x="300" y="580" width="170" height="50" as="geometry" /></mxCell>
+        <mxCell id="decAis" value="grounded?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontColor=#7A4900;" vertex="1" parent="1"><mxGeometry x="325" y="664" width="120" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="aiSearchH" value="AI Search tool&#10;(prompt agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1"><mxGeometry x="585" y="580" width="170" height="50" as="geometry" /></mxCell>
+        <mxCell id="decH" value="grounded?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontColor=#7A4900;" vertex="1" parent="1"><mxGeometry x="610" y="664" width="120" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="bingAgent" value="Bing Custom Search&#10;grounding (prompt agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1"><mxGeometry x="890" y="580" width="180" height="50" as="geometry" /></mxCell>
+        <mxCell id="decBing" value="grounded?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontColor=#7A4900;" vertex="1" parent="1"><mxGeometry x="920" y="664" width="120" height="60" as="geometry" /></mxCell>
+
+        <mxCell id="grounded" value="Return grounded answer&#10;(mode: ai-search-grounding / bing-grounding)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontColor=#1B5E20;" vertex="1" parent="1"><mxGeometry x="120" y="800" width="260" height="54" as="geometry" /></mxCell>
+        <mxCell id="localRet" value="RetrievalAgent&#10;(local county KB — safety net)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FBA00;strokeColor=#3A5400;fontColor=#1B1B1B;" vertex="1" parent="1"><mxGeometry x="500" y="800" width="260" height="54" as="geometry" /></mxCell>
+        <mxCell id="citizen" value="CitizenAssistantAgent&#10;(compose answer — Foundry or local)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#0078D4;fontColor=#0D3C61;" vertex="1" parent="1"><mxGeometry x="500" y="884" width="260" height="50" as="geometry" /></mxCell>
+        <mxCell id="resp" value="ChatResponse — answer, citations, route, mode" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#607D8B;fontColor=#263238;" vertex="1" parent="1"><mxGeometry x="280" y="968" width="420" height="46" as="geometry" /></mxCell>
+
+        <mxCell id="es1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="start" target="safety"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="safety" target="decSafety"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es3" value="yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decSafety" target="outSafety"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es4" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decSafety" target="workflow"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="workflow" target="decWf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es6" value="yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decWf" target="outWf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es7" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decWf" target="decPattern"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="es8" value="azure_search" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decPattern" target="aiSearch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es9" value="hybrid" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decPattern" target="aiSearchH"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es10" value="bing" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decPattern" target="bingAgent"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es11" value="local" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decPattern" target="localRet"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="es12" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="aiSearch" target="decAis"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es13" value="yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decAis" target="grounded"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es14" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decAis" target="localRet"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="es15" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="aiSearchH" target="decH"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es16" value="yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decH" target="grounded"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es17" value="no — fallback" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decH" target="bingAgent"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="es18" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="bingAgent" target="decBing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es19" value="yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decBing" target="grounded"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es20" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="decBing" target="localRet"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="es21" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="localRet" target="citizen"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es22" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="citizen" target="resp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="es23" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="grounded" target="resp"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

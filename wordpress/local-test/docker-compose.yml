@@ -1,0 +1,72 @@
+# Local WordPress test harness for the County Assistant plugin.
+#
+# WHY THIS EXISTS: To support local development and testing of users who run WordPress on AWS, but APIM does not care
+# where the caller lives. This stack runs the SAME WordPress plugin locally in
+# Docker and points it at the REAL Azure APIM endpoint, so the full path —
+#   browser -> WP REST proxy (nonce) -> APIM -> Azure Function -> Foundry
+# is exercised end to end without needing AWS. The plugin makes a server-side
+# HTTPS call from the WordPress container to APIM, exactly as it would on AWS.
+#
+# Usage:
+#   cd wordpress/local-test
+#   docker compose up -d
+#   ./setup.sh          # installs WP + activates plugin + sets APIM URL/key
+#   open http://localhost:8083
+#
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    image: wordpress:6-php8.3-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8083:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      - wp_data:/var/www/html
+      # Mount the county-assistant plugin read-only from the repo so edits in the
+      # repo are reflected in the running site after a plugin reactivation.
+      - ../plugin:/var/www/html/wp-content/plugins/county-assistant:ro
+      # Mount the county portal theme so the demo site matches the real county look.
+      - ../theme/county-westvale:/var/www/html/wp-content/themes/county-westvale:ro
+
+  # wp-cli runs one-shot administrative commands against the same WP volume.
+  wpcli:
+    image: wordpress:cli-php8.3
+    depends_on:
+      - wordpress
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp_data:/var/www/html
+      - ../plugin:/var/www/html/wp-content/plugins/county-assistant:ro
+      - ../theme/county-westvale:/var/www/html/wp-content/themes/county-westvale:ro
+    entrypoint: ["tail", "-f", "/dev/null"]
+
+volumes:
+  db_data:
+  wp_data:

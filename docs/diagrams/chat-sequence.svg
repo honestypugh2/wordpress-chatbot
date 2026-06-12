@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="sarr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#37474F"/>
+    </marker>
+    <marker id="sopen" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,4 L0,8" fill="none" stroke="#37474F" stroke-width="1.4"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1200" height="680" fill="#ffffff"/>
+  <text x="20" y="30" font-size="16" font-weight="bold" fill="#1b1b1b">Chat Request Sequence — WordPress (AWS) → APIM → Azure Function → Foundry</text>
+
+  <!-- lifelines -->
+  <g stroke="#9E9E9E" stroke-width="1.2" stroke-dasharray="4 4">
+    <line x1="70" y1="94" x2="70" y2="650"/>
+    <line x1="240" y1="94" x2="240" y2="650"/>
+    <line x1="410" y1="94" x2="410" y2="650"/>
+    <line x1="580" y1="94" x2="580" y2="650"/>
+    <line x1="755" y1="94" x2="755" y2="650"/>
+    <line x1="940" y1="94" x2="940" y2="650"/>
+    <line x1="1115" y1="94" x2="1115" y2="650"/>
+  </g>
+
+  <!-- headers -->
+  <g>
+    <rect x="20" y="50" width="100" height="44" rx="8" fill="#ECEFF1" stroke="#607D8B" stroke-width="2"/>
+    <text x="70" y="77" font-size="11" fill="#263238" text-anchor="middle">Resident</text>
+    <rect x="180" y="50" width="120" height="44" rx="8" fill="#FF9900" stroke="#7A4900" stroke-width="2"/>
+    <text x="240" y="70" font-size="11" fill="#1b1b1b" text-anchor="middle">WordPress Widget</text>
+    <text x="240" y="84" font-size="10" fill="#1b1b1b" text-anchor="middle">(AWS)</text>
+    <rect x="350" y="50" width="120" height="44" rx="8" fill="#FF9900" stroke="#7A4900" stroke-width="2"/>
+    <text x="410" y="70" font-size="11" fill="#1b1b1b" text-anchor="middle">WP Plugin Proxy</text>
+    <text x="410" y="84" font-size="10" fill="#1b1b1b" text-anchor="middle">(AWS)</text>
+    <rect x="520" y="50" width="120" height="44" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+    <text x="580" y="70" font-size="11" fill="#fff" text-anchor="middle">APIM</text>
+    <text x="580" y="84" font-size="10" fill="#fff" text-anchor="middle">(AI Gateway)</text>
+    <rect x="690" y="50" width="130" height="44" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+    <text x="755" y="70" font-size="11" fill="#fff" text-anchor="middle">Azure Function</text>
+    <text x="755" y="84" font-size="10" fill="#fff" text-anchor="middle">(Orchestrator)</text>
+    <rect x="880" y="50" width="120" height="44" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+    <text x="940" y="70" font-size="11" fill="#1b1b1b" text-anchor="middle">Foundry Agent</text>
+    <text x="940" y="84" font-size="10" fill="#1b1b1b" text-anchor="middle">+ Model</text>
+    <rect x="1050" y="50" width="130" height="44" rx="8" fill="#7FBA00" stroke="#3A5400" stroke-width="2"/>
+    <text x="1115" y="70" font-size="11" fill="#1b1b1b" text-anchor="middle">Retrieval</text>
+    <text x="1115" y="84" font-size="10" fill="#1b1b1b" text-anchor="middle">(KB / Search / Bing)</text>
+  </g>
+
+  <!-- messages -->
+  <g stroke="#37474F" stroke-width="1.6" fill="none">
+    <line x1="70" y1="130" x2="238" y2="130" marker-end="url(#sarr)"/>
+    <line x1="240" y1="165" x2="408" y2="165" marker-end="url(#sarr)"/>
+    <line x1="410" y1="200" x2="578" y2="200" marker-end="url(#sarr)"/>
+    <line x1="580" y1="280" x2="753" y2="280" marker-end="url(#sarr)"/>
+    <line x1="755" y1="360" x2="938" y2="360" marker-end="url(#sarr)"/>
+    <line x1="940" y1="395" x2="1113" y2="395" marker-end="url(#sarr)"/>
+  </g>
+  <g stroke="#37474F" stroke-width="1.4" fill="none" stroke-dasharray="6 4">
+    <line x1="1115" y1="430" x2="942" y2="430" marker-end="url(#sopen)"/>
+    <line x1="940" y1="465" x2="757" y2="465" marker-end="url(#sopen)"/>
+    <line x1="755" y1="540" x2="582" y2="540" marker-end="url(#sopen)"/>
+    <line x1="580" y1="575" x2="412" y2="575" marker-end="url(#sopen)"/>
+    <line x1="410" y1="610" x2="242" y2="610" marker-end="url(#sopen)"/>
+    <line x1="240" y1="640" x2="72" y2="640" marker-end="url(#sopen)"/>
+  </g>
+
+  <!-- message labels -->
+  <g font-size="11" fill="#263238">
+    <text x="155" y="124" text-anchor="middle">ask a question</text>
+    <text x="325" y="159" text-anchor="middle">POST /wp-json/county-assistant/v1/chat (nonce)</text>
+    <text x="495" y="194" text-anchor="middle">POST /assistant/chat (+ sub key, X-Correlation-Id)</text>
+    <text x="667" y="274" text-anchor="middle">forward {message, session_id, page_url}</text>
+    <text x="847" y="354" text-anchor="middle">run prompt agent (Responses API)</text>
+    <text x="1027" y="389" text-anchor="middle">grounding query (server-side tool)</text>
+    <text x="1028" y="424" text-anchor="middle">passages + citations</text>
+    <text x="847" y="459" text-anchor="middle">grounded answer + citations</text>
+    <text x="667" y="534" text-anchor="middle">ChatResponse {answer, citations, route, mode}</text>
+    <text x="495" y="569" text-anchor="middle">response (logged, metered)</text>
+    <text x="325" y="604" text-anchor="middle">response</text>
+    <text x="155" y="634" text-anchor="middle">render answer + citations</text>
+  </g>
+
+  <!-- self-action notes -->
+  <rect x="500" y="222" width="160" height="30" rx="6" fill="#FFF8E1" stroke="#0078D4"/>
+  <text x="580" y="241" font-size="10" fill="#5d4037" text-anchor="middle">auth • rate-limit • content safety</text>
+  <rect x="655" y="300" width="200" height="34" rx="6" fill="#E3F2FD" stroke="#0078D4"/>
+  <text x="755" y="315" font-size="10" fill="#004578" text-anchor="middle">safety → workflow →</text>
+  <text x="755" y="328" font-size="10" fill="#004578" text-anchor="middle">route by RETRIEVAL_PATTERN</text>
+  <rect x="560" y="482" width="420" height="30" rx="6" fill="#FFF8E1" stroke="#0078D4"/>
+  <text x="770" y="501" font-size="10" fill="#5d4037" text-anchor="middle">model calls route via APIM /openai — token-limit + token-metrics, managed-identity backend auth</text>
+</svg>

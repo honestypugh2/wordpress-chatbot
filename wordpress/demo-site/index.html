@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<!--
+  County of Westvale — SYNTHETIC demo site (not a real government website).
+  ----------------------------------------------------------------------------
+  This is a mock WordPress-style theme used to demonstrate how the Azure AI
+  Foundry chatbot embeds into a county website that (in production) is hosted on
+  AWS. It loads the SAME widget assets shipped in wordpress/widget/ and points
+  them at the local FastAPI backend, which stands in for the APIM -> Foundry path.
+
+  All content, names, and figures are fictional (County of Westvale).
+
+  Run locally:
+    1) Start the backend (allows this page's origin via CORS):
+         APP_CORS_ORIGINS="http://localhost:8080" \
+           .venv/bin/python -m uvicorn app.main:app --app-dir src --port 8000
+    2) Serve this site:
+         python -m http.server 8080 -d wordpress
+    3) Open: http://localhost:8080/demo-site/
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>County of Westvale — Residents, Services &amp; Government</title>
+  <style>
+    :root {
+      --gov-navy: #11385f;
+      --gov-blue: #0b5cab;
+      --gov-gold: #c9a227;
+      --gov-bg: #f6f7f9;
+      --gov-text: #1b1b1b;
+      --gov-muted: #5b6470;
+      --gov-line: #e3e6ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--gov-text);
+      background: var(--gov-bg);
+      line-height: 1.55;
+    }
+    a { color: var(--gov-blue); }
+
+    /* Top utility bar */
+    .gov-utility {
+      background: var(--gov-navy);
+      color: #cdd9e6;
+      font-size: 13px;
+    }
+    .gov-utility .wrap { display: flex; justify-content: space-between; align-items: center; }
+    .gov-utility a { color: #e7eef6; text-decoration: none; }
+    .gov-utility .links a { margin-left: 18px; }
+
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 10px 20px; }
+
+    /* Masthead */
+    .gov-masthead { background: #fff; border-bottom: 4px solid var(--gov-gold); }
+    .gov-masthead .wrap { display: flex; align-items: center; gap: 16px; padding: 18px 20px; }
+    .gov-seal {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: radial-gradient(circle at 50% 40%, #1d5a96, var(--gov-navy));
+      color: #fff; display: grid; place-items: center; font-weight: 700; letter-spacing: .5px;
+      border: 3px solid var(--gov-gold); flex: 0 0 auto;
+    }
+    .gov-brand h1 { font-size: 22px; margin: 0; color: var(--gov-navy); }
+    .gov-brand p { margin: 0; color: var(--gov-muted); font-size: 13px; }
+    .gov-search { margin-left: auto; display: flex; gap: 6px; }
+    .gov-search input { padding: 8px 10px; border: 1px solid var(--gov-line); border-radius: 6px; min-width: 200px; }
+    .gov-search button { padding: 8px 14px; border: none; border-radius: 6px; background: var(--gov-blue); color: #fff; cursor: pointer; }
+
+    /* Primary nav */
+    .gov-nav { background: var(--gov-blue); }
+    .gov-nav .wrap { display: flex; gap: 4px; padding: 0 20px; flex-wrap: wrap; }
+    .gov-nav a {
+      color: #fff; text-decoration: none; padding: 12px 16px; font-weight: 600; font-size: 15px;
+    }
+    .gov-nav a:hover, .gov-nav a.active { background: rgba(255,255,255,.16); }
+
+    /* Hero */
+    .gov-hero {
+      background: linear-gradient(120deg, var(--gov-navy), #1d5a96);
+      color: #fff;
+    }
+    .gov-hero .wrap { padding: 44px 20px; }
+    .gov-hero h2 { font-size: 30px; margin: 0 0 8px; }
+    .gov-hero p { font-size: 17px; max-width: 640px; color: #dce6f1; margin: 0 0 18px; }
+    .gov-hero .cta { display: inline-block; background: var(--gov-gold); color: #11243b; font-weight: 700;
+      padding: 11px 18px; border-radius: 6px; text-decoration: none; }
+
+    /* Quick services */
+    .section { padding: 34px 20px; }
+    .section h3 { color: var(--gov-navy); font-size: 20px; margin: 0 0 4px; }
+    .section .sub { color: var(--gov-muted); margin: 0 0 20px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .card {
+      background: #fff; border: 1px solid var(--gov-line); border-radius: 10px; padding: 18px;
+      text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s;
+    }
+    .card:hover { box-shadow: 0 8px 22px rgba(17,56,95,.12); transform: translateY(-2px); }
+    .card .ico { font-size: 26px; }
+    .card h4 { margin: 10px 0 4px; color: var(--gov-navy); font-size: 16px; }
+    .card p { margin: 0; color: var(--gov-muted); font-size: 14px; }
+
+    /* Two-column content */
+    .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 28px; }
+    .panel { background: #fff; border: 1px solid var(--gov-line); border-radius: 10px; padding: 20px; }
+    .panel h3 { margin-top: 0; }
+    .news li { margin-bottom: 12px; }
+    .news .date { color: var(--gov-muted); font-size: 13px; display: block; }
+    .alert { background: #fff7e6; border: 1px solid #f0d28a; border-radius: 10px; padding: 14px 16px; }
+    .alert strong { color: #8a5a00; }
+
+    /* Footer */
+    .gov-footer { background: var(--gov-navy); color: #c9d6e4; margin-top: 30px; }
+    .gov-footer .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 20px; padding: 30px 20px; }
+    .gov-footer h5 { color: #fff; margin: 0 0 8px; font-size: 14px; }
+    .gov-footer a { color: #c9d6e4; text-decoration: none; display: block; font-size: 14px; margin-bottom: 6px; }
+    .gov-legal { background: #0c2742; color: #8ba3bd; font-size: 13px; }
+    .gov-legal .wrap { padding: 12px 20px; }
+
+    @media (max-width: 760px) {
+      .grid2 { grid-template-columns: 1fr; }
+      .gov-search { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Utility bar -->
+  <div class="gov-utility">
+    <div class="wrap">
+      <span>An official synthetic demo of the County of Westvale</span>
+      <span class="links">
+        <a href="#">Translate</a>
+        <a href="#">Contact</a>
+        <a href="#">Pay Online</a>
+      </span>
+    </div>
+  </div>
+
+  <!-- Masthead -->
+  <header class="gov-masthead">
+    <div class="wrap">
+      <div class="gov-seal">WV</div>
+      <div class="gov-brand">
+        <h1>County of Westvale</h1>
+        <p>Serving residents of Westvale County</p>
+      </div>
+      <form class="gov-search" onsubmit="return false;">
+        <input type="text" placeholder="Search county services…" aria-label="Search" />
+        <button type="submit">Search</button>
+      </form>
+    </div>
+  </header>
+
+  <!-- Primary navigation -->
+  <nav class="gov-nav">
+    <div class="wrap">
+      <a href="#" class="active">Home</a>
+      <a href="#">Residents</a>
+      <a href="#">Permits &amp; Licenses</a>
+      <a href="#">Property &amp; Taxes</a>
+      <a href="#">Health Services</a>
+      <a href="#">Elections</a>
+      <a href="#">Departments</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gov-hero">
+    <div class="wrap">
+      <h2>Welcome to Westvale County</h2>
+      <p>Find permits, pay property taxes, register to vote, and connect with county
+         departments — online, anytime. Need help finding something? Ask the County
+         Assistant in the corner.</p>
+      <a class="cta" href="#services">Explore County Services</a>
+    </div>
+  </section>
+
+  <!-- Quick services -->
+  <section class="section" id="services">
+    <div class="wrap">
+      <h3>Popular Services</h3>
+      <p class="sub">The things residents ask about most.</p>
+      <div class="cards">
+        <a class="card" href="#"><div class="ico">🏗️</div><h4>Building Permits</h4><p>Apply, check status, and view fees for land-use permits.</p></a>
+        <a class="card" href="#"><div class="ico">💵</div><h4>Property Taxes</h4><p>Due dates, payment options, and assessment appeals.</p></a>
+        <a class="card" href="#"><div class="ico">🗳️</div><h4>Elections &amp; Voting</h4><p>Register to vote, find your polling place, and key dates.</p></a>
+        <a class="card" href="#"><div class="ico">🏥</div><h4>Public Health</h4><p>Clinics, immunizations, and environmental health.</p></a>
+        <a class="card" href="#"><div class="ico">🛠️</div><h4>Report a Concern</h4><p>Potholes, code issues, and road maintenance via 311.</p></a>
+        <a class="card" href="#"><div class="ico">💻</div><h4>Online Services</h4><p>Self-service portals for residents and businesses.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Two-column content -->
+  <section class="section">
+    <div class="wrap grid2">
+      <div class="panel news">
+        <h3>County News &amp; Notices</h3>
+        <ul>
+          <li><span class="date">June 5, 2026</span><a href="#">Fiscal year 2027 budget hearings open for public comment</a></li>
+          <li><span class="date">May 28, 2026</span><a href="#">Westvale 311 portal adds real-time service-request tracking</a></li>
+          <li><span class="date">May 19, 2026</span><a href="#">Summer immunization clinics scheduled at three locations</a></li>
+        </ul>
+      </div>
+      <aside>
+        <div class="alert">
+          <strong>Service alert:</strong> The Recorder's Office will close at noon on
+          June 14 for system maintenance. Online services remain available.
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <h3 style="margin-top:0;">Need help?</h3>
+          <p style="color:var(--gov-muted); font-size:14px;">
+            Use the <strong>County Assistant</strong> chat button at the bottom-right
+            to get grounded answers about county services, with sources.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="gov-footer">
+    <div class="wrap">
+      <div><h5>Government</h5><a href="#">Board of Supervisors</a><a href="#">Departments</a><a href="#">Meetings &amp; Agendas</a></div>
+      <div><h5>Residents</h5><a href="#">Permits</a><a href="#">Property &amp; Taxes</a><a href="#">Elections</a></div>
+      <div><h5>Services</h5><a href="#">Pay Online</a><a href="#">Report a Concern</a><a href="#">Public Health</a></div>
+      <div><h5>Connect</h5><a href="#">Contact Us</a><a href="#">Newsroom</a><a href="#">Accessibility</a></div>
+    </div>
+  </footer>
+  <div class="gov-legal"><div class="wrap">Synthetic demo • County of Westvale • Not an official government website • All content fictional.</div></div>
+
+  <!--
+    ===== County Assistant widget (the SAME assets shipped in wordpress/widget/) =====
+    In production this runs on the hosted WordPress site and calls APIM, which
+    fronts Azure AI Foundry. For this local demo we point it directly at the
+    FastAPI backend in browser-direct mode.
+  -->
+  <link rel="stylesheet" href="../widget/county-assistant-widget.css" />
+  <div id="county-assistant-root"></div>
+  <script>
+    // Backend base (stands in for the APIM -> Foundry path in this local demo).
+    var COUNTY_API_BASE = "http://localhost:8000";
+
+    // Sensible defaults; overridden below by the backend's active site profile so
+    // the SAME page reflects whichever DEMO_SITE_PROFILE the backend is running.
+    window.CountyAssistant = {
+      endpoint: COUNTY_API_BASE + "/api/chat",
+      mode: "browser-direct",
+      title: "County Assistant",
+      greeting: "Hi! I can help with Westvale County services — permits, taxes, voting, health, and more. What do you need?"
+    };
+
+    // Programmatic site switch: ask the backend which site profile is active.
+    // (Set DEMO_SITE_PROFILE=westvale|staging on the backend to switch.)
+    function loadWidget() {
+      var s = document.createElement("script");
+      s.src = "../widget/county-assistant-widget.js";
+      s.defer = true;
+      document.body.appendChild(s);
+    }
+    fetch(COUNTY_API_BASE + "/api/site")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (p) {
+        if (p) {
+          window.CountyAssistant.title = p.title || window.CountyAssistant.title;
+          window.CountyAssistant.greeting = p.greeting || window.CountyAssistant.greeting;
+          document.documentElement.setAttribute("data-county-site", p.site || "westvale");
+        }
+        loadWidget();
+      })
+      .catch(function () { loadWidget(); /* keep defaults if backend not reachable */ });
+  </script>
+</body>
+</html>

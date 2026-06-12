@@ -1,0 +1,1973 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "262453775634605471"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "wpcounty",
+      "minLength": 3,
+      "maxLength": 12,
+      "metadata": {
+        "description": "Base name used to derive resource names (lowercase, 3-12 chars)."
+      }
+    },
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [
+        "dev",
+        "test",
+        "prod"
+      ],
+      "metadata": {
+        "description": "Deployment environment moniker."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Primary Azure region."
+      }
+    },
+    "apimPublisherEmail": {
+      "type": "string",
+      "metadata": {
+        "description": "APIM publisher email (required by API Management)."
+      }
+    },
+    "apimPublisherName": {
+      "type": "string",
+      "defaultValue": "County of Westvale",
+      "metadata": {
+        "description": "APIM publisher organization name."
+      }
+    },
+    "apimSku": {
+      "type": "string",
+      "defaultValue": "Developer",
+      "allowedValues": [
+        "Developer",
+        "Basic",
+        "Standard",
+        "StandardV2",
+        "Premium"
+      ],
+      "metadata": {
+        "description": "APIM SKU. Developer for non-prod; StandardV2/Premium for prod."
+      }
+    },
+    "searchSku": {
+      "type": "string",
+      "defaultValue": "basic",
+      "allowedValues": [
+        "basic",
+        "standard",
+        "standard2",
+        "standard3"
+      ],
+      "metadata": {
+        "description": "Azure AI Search SKU."
+      }
+    },
+    "searchIndexAdminPrincipalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional principal ID granted Search Index Data Contributor for\ningestion (running scripts/index_kb_to_search.py). Leave empty to skip. Typically\nthe developer/CI object ID; the runtime managed identity stays read-only."
+      }
+    },
+    "searchIndexAdminPrincipalType": {
+      "type": "string",
+      "defaultValue": "User",
+      "allowedValues": [
+        "User",
+        "ServicePrincipal"
+      ],
+      "metadata": {
+        "description": "Principal type for searchIndexAdminPrincipalId (User for a developer, ServicePrincipal for CI/MI)."
+      }
+    },
+    "modelName": {
+      "type": "string",
+      "defaultValue": "gpt-4o-mini",
+      "metadata": {
+        "description": "Foundry model to deploy."
+      }
+    },
+    "modelVersion": {
+      "type": "string",
+      "defaultValue": "2024-07-18",
+      "metadata": {
+        "description": "Foundry model version."
+      }
+    },
+    "modelCapacity": {
+      "type": "int",
+      "defaultValue": 20,
+      "metadata": {
+        "description": "Model deployment capacity (thousands of tokens per minute)."
+      }
+    },
+    "backendHost": {
+      "type": "string",
+      "defaultValue": "function",
+      "allowedValues": [
+        "function",
+        "containerapp",
+        "none"
+      ],
+      "metadata": {
+        "description": "Which compute hosts the backend orchestrator:\n- function     → Azure Functions (Flex Consumption). Serverless, scale-to-zero. DEFAULT / recommended.\n- containerapp → Azure Container Apps (always-on FastAPI). Portable alternative for demonstration.\n- none         → Deploy no backend (APIM falls back to the raw Foundry endpoint; chat contract will not match)."
+      }
+    },
+    "backendImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/k8se/quickstart:latest",
+      "metadata": {
+        "description": "Backend container image for the Container Apps option (build & push before selecting containerapp)."
+      }
+    }
+  },
+  "variables": {
+    "deployFunction": "[equals(parameters('backendHost'), 'function')]",
+    "deployContainerApp": "[equals(parameters('backendHost'), 'containerapp')]",
+    "suffix": "[uniqueString(resourceGroup().id, parameters('namePrefix'), parameters('environmentName'))]",
+    "shortSuffix": "[take(variables('suffix'), 6)]",
+    "baseName": "[format('{0}-{1}', parameters('namePrefix'), parameters('environmentName'))]",
+    "searchIndexName": "county-kb",
+    "tags": {
+      "application": "county-assistant",
+      "environment": "[parameters('environmentName')]",
+      "workload": "wordpress-chatbot"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "identity",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[format('{0}-id', variables('baseName'))]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "10571125442323869336"
+            },
+            "description": "User-assigned managed identity for the County Assistant backend."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the user-assigned managed identity."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]"
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "clientId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').clientId]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "monitoring",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsName": {
+            "value": "[format('{0}-law', variables('baseName'))]"
+          },
+          "appInsightsName": {
+            "value": "[format('{0}-appi', variables('baseName'))]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "1261992990306560771"
+            },
+            "description": "Observability: Log Analytics workspace and Application Insights."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "logAnalyticsName": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace name."
+              }
+            },
+            "appInsightsName": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights component name."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('logAnalyticsName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[parameters('appInsightsName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsName'))]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "logAnalyticsId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsName'))]"
+            },
+            "appInsightsId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/components', parameters('appInsightsName'))]"
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2020-02-02').ConnectionString]"
+            },
+            "appInsightsInstrumentationKey": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2020-02-02').InstrumentationKey]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "keyvault",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[take(format('kv{0}', replace(variables('suffix'), '-', '')), 24)]"
+          },
+          "principalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "5680411475772277234"
+            },
+            "description": "Key Vault with RBAC authorization and Secrets User role for the backend identity."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault name (3-24 chars, globally unique)."
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the backend managed identity."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "variables": {
+            "keyVaultSecretsUserRoleId": "4633458b-17de-408a-b874-0445c86b69e6"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 7,
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('name')), parameters('principalId'), variables('keyVaultSecretsUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('keyVaultSecretsUserRoleId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "uri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('name')), '2023-07-01').vaultUri]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'identity')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "search",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[toLower(format('{0}-search-{1}', variables('baseName'), variables('shortSuffix')))]"
+          },
+          "principalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "sku": {
+            "value": "[parameters('searchSku')]"
+          },
+          "indexAdminPrincipalId": {
+            "value": "[parameters('searchIndexAdminPrincipalId')]"
+          },
+          "indexAdminPrincipalType": {
+            "value": "[parameters('searchIndexAdminPrincipalType')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "10365709434612120354"
+            },
+            "description": "Azure AI Search service with semantic ranking and RBAC for the backend identity."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Search service name (2-60 lowercase alphanumerics and hyphens)."
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the backend managed identity."
+              }
+            },
+            "indexAdminPrincipalId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional principal ID granted Search Index Data Contributor for\ningestion (create index + upload chunks). Leave empty to skip. Set to the\ndeveloper/CI principal that runs scripts/index_kb_to_search.py, or to principalId\nif the indexing job runs in Azure under the managed identity. The runtime identity\nabove stays read-only (least privilege)."
+              }
+            },
+            "indexAdminPrincipalType": {
+              "type": "string",
+              "defaultValue": "User",
+              "allowedValues": [
+                "User",
+                "ServicePrincipal"
+              ],
+              "metadata": {
+                "description": "Principal type for indexAdminPrincipalId (User for a developer, ServicePrincipal for MI/CI)."
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "basic",
+              "allowedValues": [
+                "basic",
+                "standard",
+                "standard2",
+                "standard3"
+              ],
+              "metadata": {
+                "description": "Search SKU."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "variables": {
+            "searchIndexDataReaderRoleId": "1407120a-92aa-4202-b7e9-c0e197c71c8f",
+            "searchIndexDataContributorRoleId": "8ebe5a00-799e-43f5-93ac-243d3dce84a7"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Search/searchServices",
+              "apiVersion": "2024-06-01-preview",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "properties": {
+                "replicaCount": 1,
+                "partitionCount": 1,
+                "hostingMode": "default",
+                "semanticSearch": "standard",
+                "publicNetworkAccess": "enabled",
+                "disableLocalAuth": false,
+                "authOptions": {
+                  "aadOrApiKey": {
+                    "aadAuthFailureMode": "http403"
+                  }
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Search/searchServices', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.Search/searchServices', parameters('name')), parameters('principalId'), variables('searchIndexDataReaderRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('searchIndexDataReaderRoleId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Search/searchServices', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('indexAdminPrincipalId')))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Search/searchServices', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.Search/searchServices', parameters('name')), parameters('indexAdminPrincipalId'), variables('searchIndexDataContributorRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('searchIndexDataContributorRoleId'))]",
+                "principalId": "[parameters('indexAdminPrincipalId')]",
+                "principalType": "[parameters('indexAdminPrincipalType')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Search/searchServices', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Search/searchServices', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "endpoint": {
+              "type": "string",
+              "value": "[format('https://{0}.search.windows.net', parameters('name'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'identity')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "foundry",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "accountName": {
+            "value": "[toLower(format('{0}-aifoundry-{1}', variables('baseName'), variables('shortSuffix')))]"
+          },
+          "projectName": {
+            "value": "county-assistant"
+          },
+          "principalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "modelName": {
+            "value": "[parameters('modelName')]"
+          },
+          "modelVersion": {
+            "value": "[parameters('modelVersion')]"
+          },
+          "modelCapacity": {
+            "value": "[parameters('modelCapacity')]"
+          },
+          "logAnalyticsId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.logAnalyticsId.value]"
+          },
+          "appInsightsId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.appInsightsId.value]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "16565109554590530056"
+            },
+            "description": "Azure AI Foundry account, project, model deployment, and RBAC for the backend identity."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "accountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Foundry (AI Services) account name."
+              }
+            },
+            "projectName": {
+              "type": "string",
+              "metadata": {
+                "description": "Foundry project name."
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the backend managed identity."
+              }
+            },
+            "modelName": {
+              "type": "string",
+              "defaultValue": "gpt-4o-mini",
+              "metadata": {
+                "description": "Model to deploy (OpenAI format)."
+              }
+            },
+            "modelVersion": {
+              "type": "string",
+              "defaultValue": "2024-07-18",
+              "metadata": {
+                "description": "Model version."
+              }
+            },
+            "modelCapacity": {
+              "type": "int",
+              "defaultValue": 20,
+              "metadata": {
+                "description": "Deployment capacity (thousands of tokens per minute)."
+              }
+            },
+            "embeddingModelName": {
+              "type": "string",
+              "defaultValue": "text-embedding-3-small",
+              "metadata": {
+                "description": "Embedding model to deploy for vector / hybrid retrieval."
+              }
+            },
+            "embeddingModelVersion": {
+              "type": "string",
+              "defaultValue": "1",
+              "metadata": {
+                "description": "Embedding model version."
+              }
+            },
+            "embeddingCapacity": {
+              "type": "int",
+              "defaultValue": 50,
+              "metadata": {
+                "description": "Embedding deployment capacity (thousands of tokens per minute)."
+              }
+            },
+            "logAnalyticsId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Log Analytics workspace resource ID for Foundry account diagnostic logs (Audit, RequestResponse, Trace, AzureOpenAIRequestUsage). Leave empty to skip."
+              }
+            },
+            "appInsightsId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Application Insights resource ID to connect to the Foundry project for agent tracing / Control Plane observability. Leave empty to skip."
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Application Insights connection string used for the project observability connection."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "variables": {
+            "openAiUserRoleId": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
+            "foundryUserRoleId": "53ca6127-db72-4b80-b1b0-d745d6d5456d"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2025-04-01-preview",
+              "name": "[parameters('accountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "AIServices",
+              "sku": {
+                "name": "S0"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "allowProjectManagement": true,
+                "customSubDomainName": "[toLower(parameters('accountName'))]",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/projects",
+              "apiVersion": "2025-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('accountName'), parameters('projectName'))]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {},
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/deployments",
+              "apiVersion": "2024-10-01",
+              "name": "[format('{0}/{1}', parameters('accountName'), parameters('modelName'))]",
+              "sku": {
+                "name": "GlobalStandard",
+                "capacity": "[parameters('modelCapacity')]"
+              },
+              "properties": {
+                "model": {
+                  "format": "OpenAI",
+                  "name": "[parameters('modelName')]",
+                  "version": "[parameters('modelVersion')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/deployments",
+              "apiVersion": "2024-10-01",
+              "name": "[format('{0}/{1}', parameters('accountName'), parameters('embeddingModelName'))]",
+              "sku": {
+                "name": "GlobalStandard",
+                "capacity": "[parameters('embeddingCapacity')]"
+              },
+              "properties": {
+                "model": {
+                  "format": "OpenAI",
+                  "name": "[parameters('embeddingModelName')]",
+                  "version": "[parameters('embeddingModelVersion')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]",
+                "[resourceId('Microsoft.CognitiveServices/accounts/deployments', parameters('accountName'), parameters('modelName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName')), parameters('principalId'), variables('openAiUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('openAiUserRoleId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts/projects', parameters('accountName'), parameters('projectName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts/projects', parameters('accountName'), parameters('projectName')), parameters('principalId'), variables('foundryUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('foundryUserRoleId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts/projects', parameters('accountName'), parameters('projectName'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('logAnalyticsId')))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]",
+              "name": "foundry-to-law",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsId')]",
+                "logs": [
+                  {
+                    "category": "Audit",
+                    "enabled": true
+                  },
+                  {
+                    "category": "RequestResponse",
+                    "enabled": true
+                  },
+                  {
+                    "category": "Trace",
+                    "enabled": true
+                  },
+                  {
+                    "category": "AzureOpenAIRequestUsage",
+                    "enabled": true
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "condition": "[and(not(empty(parameters('appInsightsId'))), not(empty(parameters('appInsightsConnectionString'))))]",
+              "type": "Microsoft.CognitiveServices/accounts/projects/connections",
+              "apiVersion": "2025-04-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('accountName'), parameters('projectName'), 'appinsights')]",
+              "properties": {
+                "category": "AppInsights",
+                "target": "[parameters('appInsightsId')]",
+                "authType": "ApiKey",
+                "isSharedToAll": true,
+                "credentials": {
+                  "key": "[parameters('appInsightsConnectionString')]"
+                },
+                "metadata": {
+                  "ApiType": "Azure",
+                  "ResourceId": "[parameters('appInsightsId')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts/projects', parameters('accountName'), parameters('projectName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "accountName": {
+              "type": "string",
+              "value": "[parameters('accountName')]"
+            },
+            "accountEndpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('accountName')), '2025-04-01-preview').endpoint]"
+            },
+            "projectName": {
+              "type": "string",
+              "value": "[parameters('projectName')]"
+            },
+            "projectEndpoint": {
+              "type": "string",
+              "value": "[format('https://{0}.services.ai.azure.com/api/projects/{1}', parameters('accountName'), parameters('projectName'))]"
+            },
+            "modelDeploymentName": {
+              "type": "string",
+              "value": "[parameters('modelName')]"
+            },
+            "embeddingDeploymentName": {
+              "type": "string",
+              "value": "[parameters('embeddingModelName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'identity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "apim",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[toLower(format('{0}-apim-{1}', variables('baseName'), variables('shortSuffix')))]"
+          },
+          "publisherEmail": {
+            "value": "[parameters('apimPublisherEmail')]"
+          },
+          "publisherName": {
+            "value": "[parameters('apimPublisherName')]"
+          },
+          "skuName": {
+            "value": "[parameters('apimSku')]"
+          },
+          "backendUrl": "[if(empty(if(variables('deployFunction'), reference(resourceId('Microsoft.Resources/deployments', 'functionBackend'), '2025-04-01').outputs.fqdn.value, if(variables('deployContainerApp'), reference(resourceId('Microsoft.Resources/deployments', 'backend'), '2025-04-01').outputs.fqdn.value, ''))), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.accountEndpoint.value), createObject('value', format('https://{0}', if(variables('deployFunction'), reference(resourceId('Microsoft.Resources/deployments', 'functionBackend'), '2025-04-01').outputs.fqdn.value, if(variables('deployContainerApp'), reference(resourceId('Microsoft.Resources/deployments', 'backend'), '2025-04-01').outputs.fqdn.value, '')))))]",
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+          },
+          "logAnalyticsId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.logAnalyticsId.value]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "11537276104263017255"
+            },
+            "description": "API Management service, API, and chat operation for the County Assistant AI gateway."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "API Management service name."
+              }
+            },
+            "publisherEmail": {
+              "type": "string",
+              "metadata": {
+                "description": "Publisher email (required by API Management)."
+              }
+            },
+            "publisherName": {
+              "type": "string",
+              "metadata": {
+                "description": "Publisher organization name."
+              }
+            },
+            "skuName": {
+              "type": "string",
+              "defaultValue": "Developer",
+              "allowedValues": [
+                "Developer",
+                "Basic",
+                "Standard",
+                "StandardV2",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "APIM SKU name. Use Developer for non-prod; StandardV2/Premium for prod."
+              }
+            },
+            "skuCapacity": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "APIM scale units."
+              }
+            },
+            "backendUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Backend URL the gateway routes to. Per the reference architecture this is the FastAPI orchestrator (Container App) which in turn calls Foundry + Azure AI Search. Falls back to the Foundry account endpoint only when the backend is not deployed."
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Application Insights connection string for gateway diagnostics."
+              }
+            },
+            "logAnalyticsId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Log Analytics workspace resource ID for gateway diagnostic logs (ApiManagementGatewayLogs / \"GatewayLogs\" table). Leave empty to skip."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ApiManagement/service",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('skuName')]",
+                "capacity": "[parameters('skuCapacity')]"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "publisherEmail": "[parameters('publisherEmail')]",
+                "publisherName": "[parameters('publisherName')]"
+              }
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/backends",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'assistant-backend')]",
+              "properties": {
+                "protocol": "http",
+                "url": "[parameters('backendUrl')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'county-assistant')]",
+              "properties": {
+                "displayName": "County Assistant",
+                "path": "assistant",
+                "protocols": [
+                  "https"
+                ],
+                "subscriptionRequired": true
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), 'county-assistant', 'chat')]",
+              "properties": {
+                "displayName": "Chat",
+                "method": "POST",
+                "urlTemplate": "/chat",
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Chat response"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'county-assistant')]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('appInsightsConnectionString')))]",
+              "type": "Microsoft.ApiManagement/service/loggers",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'appinsights')]",
+              "properties": {
+                "loggerType": "applicationInsights",
+                "description": "County Assistant gateway telemetry",
+                "credentials": {
+                  "connectionString": "[parameters('appInsightsConnectionString')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('logAnalyticsId')))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]",
+              "name": "apim-to-law",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsId')]",
+                "logs": [
+                  {
+                    "category": "GatewayLogs",
+                    "enabled": true
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "gatewayUrl": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2024-05-01').gatewayUrl]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2024-05-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'backend')]",
+        "[resourceId('Microsoft.Resources/deployments', 'foundry')]",
+        "[resourceId('Microsoft.Resources/deployments', 'functionBackend')]",
+        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]"
+      ]
+    },
+    {
+      "condition": "[variables('deployContainerApp')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "backend",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "environmentName": {
+            "value": "[format('{0}-cae', variables('baseName'))]"
+          },
+          "appName": {
+            "value": "[format('{0}-api', variables('baseName'))]"
+          },
+          "userAssignedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.id.value]"
+          },
+          "userAssignedClientId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.clientId.value]"
+          },
+          "containerImage": {
+            "value": "[parameters('backendImage')]"
+          },
+          "foundryProjectEndpoint": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.projectEndpoint.value]"
+          },
+          "modelDeploymentName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.modelDeploymentName.value]"
+          },
+          "searchEndpoint": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'search'), '2025-04-01').outputs.endpoint.value]"
+          },
+          "searchIndex": {
+            "value": "[variables('searchIndexName')]"
+          },
+          "searchSemanticConfig": {
+            "value": "county-semantic"
+          },
+          "embeddingDeploymentName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.embeddingDeploymentName.value]"
+          },
+          "vectorEnabled": {
+            "value": true
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "1766842488071329790"
+            },
+            "description": "Container Apps environment and app hosting the County Assistant backend."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "environmentName": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps managed environment name."
+              }
+            },
+            "appName": {
+              "type": "string",
+              "metadata": {
+                "description": "Container app name."
+              }
+            },
+            "userAssignedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the user-assigned managed identity."
+              }
+            },
+            "userAssignedClientId": {
+              "type": "string",
+              "metadata": {
+                "description": "Client ID of the user-assigned managed identity (for DefaultAzureCredential)."
+              }
+            },
+            "containerImage": {
+              "type": "string",
+              "defaultValue": "mcr.microsoft.com/k8se/quickstart:latest",
+              "metadata": {
+                "description": "Container image reference (build and push before deploying)."
+              }
+            },
+            "foundryProjectEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Foundry project endpoint for AIProjectClient."
+              }
+            },
+            "modelDeploymentName": {
+              "type": "string",
+              "metadata": {
+                "description": "Model deployment name."
+              }
+            },
+            "searchEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Search endpoint."
+              }
+            },
+            "searchIndex": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Search index name."
+              }
+            },
+            "searchSemanticConfig": {
+              "type": "string",
+              "defaultValue": "county-semantic",
+              "metadata": {
+                "description": "Semantic ranker configuration name on the index."
+              }
+            },
+            "embeddingDeploymentName": {
+              "type": "string",
+              "defaultValue": "text-embedding-3-small",
+              "metadata": {
+                "description": "Embedding deployment name for hybrid retrieval."
+              }
+            },
+            "vectorEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable hybrid keyword+vector retrieval at query time."
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Application Insights connection string."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('environmentName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {}
+            },
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('appName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+                "configuration": {
+                  "ingress": {
+                    "external": true,
+                    "targetPort": 8000,
+                    "transport": "auto"
+                  }
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "county-assistant",
+                      "image": "[parameters('containerImage')]",
+                      "resources": {
+                        "cpu": "[json('0.5')]",
+                        "memory": "1Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "APP_ENV",
+                          "value": "prod"
+                        },
+                        {
+                          "name": "APP_LOG_JSON",
+                          "value": "true"
+                        },
+                        {
+                          "name": "FOUNDRY_ENABLED",
+                          "value": "true"
+                        },
+                        {
+                          "name": "AZURE_AI_PROJECT_ENDPOINT",
+                          "value": "[parameters('foundryProjectEndpoint')]"
+                        },
+                        {
+                          "name": "AZURE_AI_MODEL_DEPLOYMENT",
+                          "value": "[parameters('modelDeploymentName')]"
+                        },
+                        {
+                          "name": "AZURE_SEARCH_ENDPOINT",
+                          "value": "[parameters('searchEndpoint')]"
+                        },
+                        {
+                          "name": "AZURE_SEARCH_INDEX",
+                          "value": "[parameters('searchIndex')]"
+                        },
+                        {
+                          "name": "AZURE_SEARCH_SEMANTIC_CONFIG",
+                          "value": "[parameters('searchSemanticConfig')]"
+                        },
+                        {
+                          "name": "AZURE_EMBEDDING_DEPLOYMENT",
+                          "value": "[parameters('embeddingDeploymentName')]"
+                        },
+                        {
+                          "name": "RAG_VECTOR_ENABLED",
+                          "value": "[string(parameters('vectorEnabled'))]"
+                        },
+                        {
+                          "name": "AZURE_CLIENT_ID",
+                          "value": "[parameters('userAssignedClientId')]"
+                        },
+                        {
+                          "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                          "value": "[parameters('appInsightsConnectionString')]"
+                        },
+                        {
+                          "name": "OTEL_ENABLED",
+                          "value": "true"
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": 1,
+                    "maxReplicas": 3
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('appName')]"
+            },
+            "fqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2024-03-01').configuration.ingress.fqdn]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'foundry')]",
+        "[resourceId('Microsoft.Resources/deployments', 'identity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]",
+        "[resourceId('Microsoft.Resources/deployments', 'search')]"
+      ]
+    },
+    {
+      "condition": "[variables('deployFunction')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "functionBackend",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "planName": {
+            "value": "[format('{0}-fcplan', variables('baseName'))]"
+          },
+          "appName": {
+            "value": "[format('{0}-func-{1}', variables('baseName'), variables('shortSuffix'))]"
+          },
+          "storageAccountName": {
+            "value": "[take(format('st{0}', replace(variables('suffix'), '-', '')), 24)]"
+          },
+          "userAssignedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.id.value]"
+          },
+          "userAssignedClientId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.clientId.value]"
+          },
+          "principalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "foundryProjectEndpoint": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.projectEndpoint.value]"
+          },
+          "modelDeploymentName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.modelDeploymentName.value]"
+          },
+          "searchEndpoint": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'search'), '2025-04-01').outputs.endpoint.value]"
+          },
+          "searchIndex": {
+            "value": "[variables('searchIndexName')]"
+          },
+          "searchSemanticConfig": {
+            "value": "county-semantic"
+          },
+          "embeddingDeploymentName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.embeddingDeploymentName.value]"
+          },
+          "vectorEnabled": {
+            "value": true
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.43.8.12551",
+              "templateHash": "15563206833215133937"
+            },
+            "description": "Flex Consumption Function App hosting the County Assistant backend."
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "planName": {
+              "type": "string",
+              "metadata": {
+                "description": "Flex Consumption plan name."
+              }
+            },
+            "appName": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App (site) name."
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage account name (3-24 lowercase alphanumeric)."
+              }
+            },
+            "userAssignedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the user-assigned managed identity."
+              }
+            },
+            "userAssignedClientId": {
+              "type": "string",
+              "metadata": {
+                "description": "Client ID of the user-assigned managed identity (for DefaultAzureCredential)."
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the user-assigned managed identity (for RBAC)."
+              }
+            },
+            "foundryProjectEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Foundry project endpoint for AIProjectClient."
+              }
+            },
+            "modelDeploymentName": {
+              "type": "string",
+              "metadata": {
+                "description": "Model deployment name."
+              }
+            },
+            "searchEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Search endpoint."
+              }
+            },
+            "searchIndex": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure AI Search index name."
+              }
+            },
+            "searchSemanticConfig": {
+              "type": "string",
+              "defaultValue": "county-semantic",
+              "metadata": {
+                "description": "Semantic ranker configuration name on the index."
+              }
+            },
+            "embeddingDeploymentName": {
+              "type": "string",
+              "defaultValue": "text-embedding-3-small",
+              "metadata": {
+                "description": "Embedding deployment name for hybrid retrieval."
+              }
+            },
+            "vectorEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable hybrid keyword+vector retrieval at query time."
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Application Insights connection string."
+              }
+            },
+            "pythonVersion": {
+              "type": "string",
+              "defaultValue": "3.12",
+              "metadata": {
+                "description": "Python runtime version for the Flex Consumption app."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "variables": {
+            "storageBlobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
+            "deploymentContainerName": "deployments"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "allowSharedKeyAccess": false,
+                "publicNetworkAccess": "Enabled",
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', variables('deploymentContainerName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), parameters('principalId'), variables('storageBlobDataOwnerRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('storageBlobDataOwnerRoleId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2023-12-01",
+              "name": "[parameters('planName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "FC1",
+                "tier": "FlexConsumption"
+              },
+              "kind": "functionapp",
+              "properties": {
+                "reserved": true
+              }
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-12-01",
+              "name": "[parameters('appName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "functionapp,linux",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('planName'))]",
+                "httpsOnly": true,
+                "functionAppConfig": {
+                  "deployment": {
+                    "storage": {
+                      "type": "blobContainer",
+                      "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-05-01').primaryEndpoints.blob, variables('deploymentContainerName'))]",
+                      "authentication": {
+                        "type": "UserAssignedIdentity",
+                        "userAssignedIdentityResourceId": "[parameters('userAssignedIdentityId')]"
+                      }
+                    }
+                  },
+                  "scaleAndConcurrency": {
+                    "maximumInstanceCount": 100,
+                    "instanceMemoryMB": 2048
+                  },
+                  "runtime": {
+                    "name": "python",
+                    "version": "[parameters('pythonVersion')]"
+                  }
+                },
+                "siteConfig": {
+                  "appSettings": [
+                    {
+                      "name": "AzureWebJobsStorage__accountName",
+                      "value": "[parameters('storageAccountName')]"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage__credential",
+                      "value": "managedidentity"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage__clientId",
+                      "value": "[parameters('userAssignedClientId')]"
+                    },
+                    {
+                      "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                      "value": "[parameters('appInsightsConnectionString')]"
+                    },
+                    {
+                      "name": "APP_ENV",
+                      "value": "prod"
+                    },
+                    {
+                      "name": "APP_LOG_JSON",
+                      "value": "true"
+                    },
+                    {
+                      "name": "FOUNDRY_ENABLED",
+                      "value": "true"
+                    },
+                    {
+                      "name": "AZURE_AI_PROJECT_ENDPOINT",
+                      "value": "[parameters('foundryProjectEndpoint')]"
+                    },
+                    {
+                      "name": "AZURE_AI_MODEL_DEPLOYMENT",
+                      "value": "[parameters('modelDeploymentName')]"
+                    },
+                    {
+                      "name": "AZURE_SEARCH_ENDPOINT",
+                      "value": "[parameters('searchEndpoint')]"
+                    },
+                    {
+                      "name": "AZURE_SEARCH_INDEX",
+                      "value": "[parameters('searchIndex')]"
+                    },
+                    {
+                      "name": "AZURE_SEARCH_SEMANTIC_CONFIG",
+                      "value": "[parameters('searchSemanticConfig')]"
+                    },
+                    {
+                      "name": "AZURE_EMBEDDING_DEPLOYMENT",
+                      "value": "[parameters('embeddingDeploymentName')]"
+                    },
+                    {
+                      "name": "RAG_VECTOR_ENABLED",
+                      "value": "[string(parameters('vectorEnabled'))]"
+                    },
+                    {
+                      "name": "AZURE_CLIENT_ID",
+                      "value": "[parameters('userAssignedClientId')]"
+                    },
+                    {
+                      "name": "OTEL_ENABLED",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('planName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), parameters('principalId'), variables('storageBlobDataOwnerRoleId')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('appName')]"
+            },
+            "fqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('appName')), '2023-12-01').defaultHostName]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'foundry')]",
+        "[resourceId('Microsoft.Resources/deployments', 'identity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]",
+        "[resourceId('Microsoft.Resources/deployments', 'search')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "managedIdentityClientId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.clientId.value]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyvault'), '2025-04-01').outputs.uri.value]"
+    },
+    "searchEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'search'), '2025-04-01').outputs.endpoint.value]"
+    },
+    "searchIndexName": {
+      "type": "string",
+      "value": "[variables('searchIndexName')]"
+    },
+    "foundryAccountEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.accountEndpoint.value]"
+    },
+    "foundryProjectEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.projectEndpoint.value]"
+    },
+    "modelDeploymentName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.modelDeploymentName.value]"
+    },
+    "embeddingDeploymentName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry'), '2025-04-01').outputs.embeddingDeploymentName.value]"
+    },
+    "apimGatewayUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'apim'), '2025-04-01').outputs.gatewayUrl.value]"
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+    },
+    "backendHost": {
+      "type": "string",
+      "value": "[parameters('backendHost')]"
+    },
+    "backendFqdn": {
+      "type": "string",
+      "value": "[if(variables('deployFunction'), reference(resourceId('Microsoft.Resources/deployments', 'functionBackend'), '2025-04-01').outputs.fqdn.value, if(variables('deployContainerApp'), reference(resourceId('Microsoft.Resources/deployments', 'backend'), '2025-04-01').outputs.fqdn.value, ''))]"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+<!--
+  Fragment: optional Azure AI Content Safety insertion point.
+  Calls Content Safety on the user's prompt and blocks high-severity content
+  before it reaches the model/backend. Defense-in-depth: the backend SafetyAgent
+  applies a second check. Use Named Values + managed identity for the endpoint/key.
+-->
+<fragment>
+  <!-- Extract the user's message from the chat request body. -->
+  <set-variable name="userText"
+    value="@{
+      try {
+        var body = context.Request.Body.As<JObject>(preserveContent: true);
+        return body["message"]?.ToString() ?? "";
+      } catch { return ""; }
+    }" />
+
+  <send-request mode="new" response-variable-name="safetyResponse" timeout="5" ignore-error="true">
+    <set-url>{{content-safety-endpoint}}/contentsafety/text:analyze?api-version=2024-09-01</set-url>
+    <set-method>POST</set-method>
+    <set-header name="Content-Type" exists-action="override">
+      <value>application/json</value>
+    </set-header>
+    <!-- Prefer managed identity; key shown only as a fallback Named Value. -->
+    <set-header name="Ocp-Apim-Subscription-Key" exists-action="override">
+      <value>{{content-safety-key}}</value>
+    </set-header>
+    <set-body>@{
+      return new JObject(
+        new JProperty("text", (string)context.Variables["userText"]),
+        new JProperty("categories", new JArray("Hate","SelfHarm","Sexual","Violence"))
+      ).ToString();
+    }</set-body>
+  </send-request>
+
+  <!-- Block when any category meets/exceeds a severity threshold. -->
+  <choose>
+    <when condition="@{
+      var resp = (IResponse)context.Variables.GetValueOrDefault("safetyResponse", null);
+      if (resp == null || resp.StatusCode != 200) { return false; }
+      var analysis = resp.Body.As<JObject>(preserveContent: true);
+      var cats = analysis["categoriesAnalysis"] as JArray;
+      if (cats == null) { return false; }
+      foreach (var c in cats) {
+        if (((int?)c["severity"] ?? 0) >= 4) { return true; }
+      }
+      return false;
+    }">
+      <return-response>
+        <set-status code="422" reason="Content blocked" />
+        <set-header name="Content-Type" exists-action="override">
+          <value>application/json</value>
+        </set-header>
+        <set-body>@{
+          return new JObject(
+            new JProperty("error", new JObject(
+              new JProperty("code", "safety_rejected"),
+              new JProperty("message", "Your message couldn't be processed. Please rephrase.")
+            ))
+          ).ToString();
+        }</set-body>
+      </return-response>
+    </when>
+  </choose>
+</fragment>

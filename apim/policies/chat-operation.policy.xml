@@ -1,0 +1,103 @@
+<!--
+  County Assistant — APIM AI Gateway policy (FULL example)
+  Scope: API or Operation level for POST /county-assistant/chat
+
+  This is the single governed hop between the WordPress experience layer and the
+  Azure AI Foundry intelligence layer. It demonstrates:
+    - CORS for the WordPress origin
+    - subscription-key auth mediation (public key -> backend identity)
+    - rate limiting + token-based throttling
+    - correlation header propagation
+    - a content-safety insertion point
+    - backend routing to the FastAPI service / Foundry
+
+  NOTE: Validate against your APIM tier and current policy schema. Use Named Values
+  backed by Key Vault for all secrets; never inline keys. Fragments referenced here
+  (rate-limit, token-throttle, semantic-cache, content-safety) are provided as
+  separate files in this folder and can be inlined or included.
+-->
+<policies>
+  <inbound>
+    <base />
+
+    <!-- 1) CORS: allow only the WordPress site origin(s). -->
+    <cors allow-credentials="false">
+      <allowed-origins>
+        <origin>https://county-portal.example.gov</origin>
+      </allowed-origins>
+      <allowed-methods>
+        <method>OPTIONS</method>
+        <method>POST</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>Content-Type</header>
+        <header>X-Correlation-Id</header>
+        <header>Ocp-Apim-Subscription-Key</header>
+      </allowed-headers>
+      <expose-headers>
+        <header>X-Correlation-Id</header>
+      </expose-headers>
+    </cors>
+
+    <!-- 2) Auth mediation: the public widget presents a tightly-scoped product
+         subscription key. APIM validates it, then swaps in the backend identity
+         so the public never holds Foundry/backend credentials. -->
+    <check-header name="Ocp-Apim-Subscription-Key" failed-check-httpcode="401"
+                  failed-check-error-message="Missing API key" ignore-case="true" />
+    <!-- Replace the public key with a backend credential from Key Vault. -->
+    <set-header name="Authorization" exists-action="override">
+      <value>@("Bearer " + (string)context.Variables.GetValueOrDefault("backendToken", "{{backend-api-token}}"))</value>
+    </set-header>
+    <set-header name="Ocp-Apim-Subscription-Key" exists-action="delete" />
+
+    <!-- 3) Correlation: reuse inbound id or mint one; flow it downstream. -->
+    <set-variable name="correlationId"
+      value="@(context.Request.Headers.GetValueOrDefault("X-Correlation-Id", Guid.NewGuid().ToString("N")))" />
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables["correlationId"])</value>
+    </set-header>
+
+    <!-- 4) Rate limiting + token-based throttling (see fragment files). -->
+    <rate-limit-by-key calls="60" renewal-period="60"
+      counter-key="@(context.Request.IpAddress)" />
+    <!-- Token-metered throttle for LLM cost control (APIM AI gateway policy). -->
+    <azure-openai-token-limit counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+      tokens-per-minute="20000" estimate-prompt-tokens="true"
+      remaining-tokens-header-name="x-tokens-remaining" />
+
+    <!-- 5) Semantic cache lookup (see semantic-cache.xml). Cuts cost/latency for
+         repeated questions. Requires a cache + embeddings backend configured. -->
+    <azure-openai-semantic-cache-lookup score-threshold="0.92"
+      embeddings-backend-id="embeddings-backend"
+      embeddings-backend-auth="system-assigned" />
+
+    <!-- 6) Content-safety insertion point (see content-safety.xml). -->
+    <!-- <send-request> to Azure AI Content Safety, then branch on the verdict. -->
+
+    <!-- 7) Backend routing to the FastAPI service / Foundry. -->
+    <set-backend-service base-url="https://county-backend.internal.example/api" />
+  </inbound>
+
+  <backend>
+    <forward-request timeout="30" />
+  </backend>
+
+  <outbound>
+    <base />
+    <!-- Echo correlation id back to the widget. -->
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables["correlationId"])</value>
+    </set-header>
+    <!-- Store successful answers in the semantic cache. -->
+    <azure-openai-semantic-cache-store duration="3600" />
+    <!-- Strip server-identifying headers. -->
+    <set-header name="Server" exists-action="delete" />
+  </outbound>
+
+  <on-error>
+    <base />
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables.GetValueOrDefault("correlationId", ""))</value>
+    </set-header>
+  </on-error>
+</policies>

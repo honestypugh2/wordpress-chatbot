@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 1040" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="oa" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#37474F"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1120" height="1040" fill="#ffffff"/>
+  <text x="20" y="32" font-size="16" font-weight="bold" fill="#1b1b1b">Orchestrator Agent Flow — safety → workflow → retrieval (by pattern) → answer</text>
+
+  <!-- edges -->
+  <g stroke="#37474F" stroke-width="1.6" fill="none">
+    <path d="M570,96 L570,116" marker-end="url(#oa)"/>
+    <path d="M570,156 L570,176" marker-end="url(#oa)"/>
+    <path d="M635,208 L718,208" marker-end="url(#oa)"/>
+    <path d="M570,240 L570,272" marker-end="url(#oa)"/>
+    <path d="M570,312 L570,332" marker-end="url(#oa)"/>
+    <path d="M635,364 L718,364" marker-end="url(#oa)"/>
+    <path d="M570,396 L570,428" marker-end="url(#oa)"/>
+
+    <path d="M480,470 L385,470 L385,578" marker-end="url(#oa)"/>
+    <path d="M590,512 L590,545 L670,545 L670,578" marker-end="url(#oa)"/>
+    <path d="M660,470 L980,470 L980,578" marker-end="url(#oa)"/>
+    <path d="M555,512 L555,792 L630,792 L630,798" marker-end="url(#oa)"/>
+
+    <path d="M385,630 L385,664" marker-end="url(#oa)"/>
+    <path d="M385,724 L385,766 L246,766 L246,798" marker-end="url(#oa)"/>
+    <path d="M445,694 L478,694 L478,786 L580,786 L580,798" marker-end="url(#oa)"/>
+
+    <path d="M670,630 L670,664" marker-end="url(#oa)"/>
+    <path d="M670,724 L670,772 L250,772 L250,798" marker-end="url(#oa)"/>
+    <path d="M730,694 L760,694 L760,605 L888,605" marker-end="url(#oa)"/>
+
+    <path d="M980,630 L980,664" marker-end="url(#oa)"/>
+    <path d="M980,724 L980,778 L254,778 L254,798" marker-end="url(#oa)"/>
+    <path d="M920,694 L890,694 L890,827 L762,827" marker-end="url(#oa)"/>
+
+    <path d="M630,854 L630,884" marker-end="url(#oa)"/>
+    <path d="M630,934 L630,951 L490,951 L490,966" marker-end="url(#oa)"/>
+    <path d="M250,854 L250,991 L278,991" marker-end="url(#oa)"/>
+  </g>
+
+  <!-- edge labels -->
+  <g font-size="10" fill="#37474F">
+    <text x="672" y="203">yes</text>
+    <text x="578" y="260">no</text>
+    <text x="672" y="359">yes</text>
+    <text x="578" y="416">no</text>
+    <text x="398" y="462">azure_search</text>
+    <text x="600" y="540">hybrid</text>
+    <text x="790" y="462">bing</text>
+    <text x="560" y="556">local</text>
+    <text x="393" y="744">yes</text>
+    <text x="455" y="688">no</text>
+    <text x="678" y="744">yes</text>
+    <text x="765" y="688">no — fallback</text>
+    <text x="988" y="744">yes</text>
+    <text x="898" y="688">no</text>
+  </g>
+
+  <!-- nodes -->
+  <g>
+    <rect x="470" y="56" width="200" height="40" rx="20" fill="#ECEFF1" stroke="#607D8B" stroke-width="2"/>
+    <text x="570" y="81" font-size="12" fill="#263238" text-anchor="middle">Chat turn — message</text>
+
+    <rect x="490" y="116" width="160" height="40" rx="8" fill="#E3F2FD" stroke="#0078D4" stroke-width="2"/>
+    <text x="570" y="141" font-size="12" fill="#0D3C61" text-anchor="middle">SafetyAgent</text>
+
+    <polygon points="570,176 635,208 570,240 505,208" fill="#FFF3E0" stroke="#FB8C00" stroke-width="2"/>
+    <text x="570" y="212" font-size="11" fill="#7A4900" text-anchor="middle">handled?</text>
+
+    <rect x="720" y="184" width="200" height="48" rx="8" fill="#FFCDD2" stroke="#C62828" stroke-width="2"/>
+    <text x="820" y="204" font-size="11" fill="#7B1313" text-anchor="middle">Return safety response</text>
+    <text x="820" y="218" font-size="10" fill="#7B1313" text-anchor="middle">(emergency / blocked / too long)</text>
+
+    <rect x="490" y="272" width="160" height="40" rx="8" fill="#E3F2FD" stroke="#0078D4" stroke-width="2"/>
+    <text x="570" y="297" font-size="12" fill="#0D3C61" text-anchor="middle">WorkflowAgent</text>
+
+    <polygon points="570,332 635,364 570,396 505,364" fill="#FFF3E0" stroke="#FB8C00" stroke-width="2"/>
+    <text x="570" y="368" font-size="11" fill="#7A4900" text-anchor="middle">handled?</text>
+
+    <rect x="720" y="340" width="200" height="48" rx="8" fill="#FFCDD2" stroke="#C62828" stroke-width="2"/>
+    <text x="820" y="360" font-size="11" fill="#7B1313" text-anchor="middle">Return workflow response</text>
+    <text x="820" y="374" font-size="10" fill="#7B1313" text-anchor="middle">(actionable intent)</text>
+
+    <polygon points="570,428 660,470 570,512 480,470" fill="#FFF3E0" stroke="#FB8C00" stroke-width="2"/>
+    <text x="570" y="474" font-size="11" fill="#7A4900" text-anchor="middle">RETRIEVAL_PATTERN ?</text>
+
+    <rect x="300" y="580" width="170" height="50" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+    <text x="385" y="600" font-size="11" fill="#1b1b1b" text-anchor="middle">AI Search tool</text>
+    <text x="385" y="615" font-size="10" fill="#1b1b1b" text-anchor="middle">(prompt agent)</text>
+    <polygon points="385,664 445,694 385,724 325,694" fill="#FFF3E0" stroke="#FB8C00" stroke-width="2"/>
+    <text x="385" y="698" font-size="10" fill="#7A4900" text-anchor="middle">grounded?</text>
+
+    <rect x="585" y="580" width="170" height="50" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+    <text x="670" y="600" font-size="11" fill="#1b1b1b" text-anchor="middle">AI Search tool</text>
+    <text x="670" y="615" font-size="10" fill="#1b1b1b" text-anchor="middle">(prompt agent)</text>
+    <polygon points="670,664 730,694 670,724 610,694" fill="#FFF3E0" stroke="#FB8C00" stroke-width="2"/>
+    <text x="670" y="698" font-size="10" fill="#7A4900" text-anchor="middle">grounded?</text>
+
+    <rect x="890" y="580" width="180" height="50" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+    <text x="980" y="600" font-size="11" fill="#1b1b1b" text-anchor="middle">Bing Custom Search</text>
+    <text x="980" y="615" font-size="10" fill="#1b1b1b" text-anchor="middle">grounding (prompt agent)</text>
+    <polygon points="980,664 1040,694 980,724 920,694" fill="#FFF3E0" stroke="#FB8C00" stroke-width="2"/>
+    <text x="980" y="698" font-size="10" fill="#7A4900" text-anchor="middle">grounded?</text>
+
+    <rect x="120" y="800" width="260" height="54" rx="8" fill="#C8E6C9" stroke="#2E7D32" stroke-width="2"/>
+    <text x="250" y="822" font-size="11" fill="#1B5E20" text-anchor="middle">Return grounded answer</text>
+    <text x="250" y="837" font-size="10" fill="#1B5E20" text-anchor="middle">(mode: ai-search-grounding / bing-grounding)</text>
+
+    <rect x="500" y="800" width="260" height="54" rx="8" fill="#7FBA00" stroke="#3A5400" stroke-width="2"/>
+    <text x="630" y="822" font-size="11" fill="#1b1b1b" text-anchor="middle">RetrievalAgent</text>
+    <text x="630" y="837" font-size="10" fill="#1b1b1b" text-anchor="middle">(local county KB — safety net)</text>
+
+    <rect x="500" y="884" width="260" height="50" rx="8" fill="#E3F2FD" stroke="#0078D4" stroke-width="2"/>
+    <text x="630" y="904" font-size="11" fill="#0D3C61" text-anchor="middle">CitizenAssistantAgent</text>
+    <text x="630" y="919" font-size="10" fill="#0D3C61" text-anchor="middle">(compose answer — Foundry or local)</text>
+
+    <rect x="280" y="968" width="420" height="46" rx="23" fill="#ECEFF1" stroke="#607D8B" stroke-width="2"/>
+    <text x="490" y="996" font-size="12" fill="#263238" text-anchor="middle">ChatResponse — answer, citations, route, mode</text>
+  </g>
+</svg>

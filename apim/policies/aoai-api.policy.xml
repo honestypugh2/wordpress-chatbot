@@ -1,0 +1,56 @@
+<!--
+  FULL AI-gateway governance policy for the Azure OpenAI inference API (path: /aoai).
+
+  This is the complete, reference policy that turns API Management into a true
+  GenAI gateway in front of the Foundry Azure OpenAI endpoint:
+
+    * authentication-managed-identity  -> APIM calls Foundry with its own
+                                          managed identity (no keys on the wire).
+    * azure-openai-token-limit         -> per-caller tokens-per-minute budget;
+                                          emits remaining/consumed-token headers
+                                          and returns 429 when the budget is hit.
+    * azure-openai-emit-token-metric   -> prompt/completion/total token metrics to
+                                          Application Insights (logger: appinsights).
+    * azure-openai-semantic-cache-*    -> embedding-based response cache backed by
+                                          Azure Managed Redis (RediSearch), so
+                                          semantically similar prompts are served
+                                          from cache instead of re-billing the model.
+
+  Backend: aoai-backend -> https://wpcounty-dev-aifoundry-mro5df.openai.azure.com/openai
+  The semantic-cache embeddings call reuses the same backend (text-embedding-3-small
+  deployment lives on the same Foundry account) with system-assigned MI auth.
+-->
+<policies>
+    <inbound>
+        <base />
+        <set-backend-service backend-id="aoai-backend" />
+        <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+        <azure-openai-token-limit
+            counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+            tokens-per-minute="20000"
+            estimate-prompt-tokens="false"
+            remaining-tokens-header-name="x-ratelimit-remaining-tokens"
+            tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+        <azure-openai-emit-token-metric namespace="genai">
+            <dimension name="API ID" />
+            <dimension name="Operation ID" />
+            <dimension name="Subscription ID" />
+        </azure-openai-emit-token-metric>
+        <azure-openai-semantic-cache-lookup
+            score-threshold="0.92"
+            embeddings-backend-id="aoai-backend"
+            embeddings-backend-auth="system-assigned"
+            ignore-system-messages="true"
+            max-message-count="10" />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <azure-openai-semantic-cache-store duration="3600" />
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

@@ -1,0 +1,21 @@
+<!--
+  Fragment: semantic caching for repeated/similar questions.
+  Returns a cached answer when a semantically similar prompt was seen recently,
+  cutting model cost and latency. Requires an external cache (e.g. Azure Managed
+  Redis) and an embeddings backend registered in APIM.
+
+  Lookup goes in <inbound>; store goes in <outbound>.
+-->
+<fragment>
+  <!-- INBOUND: attempt a semantic cache hit before calling the model/backend. -->
+  <azure-openai-semantic-cache-lookup
+    score-threshold="0.92"
+    embeddings-backend-id="embeddings-backend"
+    embeddings-backend-auth="system-assigned"
+    ignore-system-messages="true">
+    <vary-by>@(context.Request.Headers.GetValueOrDefault("Accept-Language", "en-US"))</vary-by>
+  </azure-openai-semantic-cache-lookup>
+
+  <!-- OUTBOUND (place in <outbound>): persist the answer for future hits. -->
+  <!-- <azure-openai-semantic-cache-store duration="3600" /> -->
+</fragment>

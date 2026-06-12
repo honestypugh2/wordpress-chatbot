@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "description": "SYNTHETIC, FICTIONAL county-government knowledge base seed data for the County Assistant prototype. Inspired by the public information-architecture style of a typical county portal (departments, services, FAQs, online services, permits, taxes, health, emergency, voting, reporting concerns). All names, numbers, URLs, fees, and content are invented and must NOT be treated as real. Do not copy any real county content.",
+    "jurisdiction": "County of Westvale (fictional)",
+    "portal": "https://county-portal.example.gov",
+    "disclaimer": "Fictional content for prototyping only. Not legal, financial, medical, or emergency advice."
+  },
+  "departments": [
+    { "id": "dept-clerk", "name": "Clerk-Recorder", "summary": "Records, marriage licenses, fictitious business names.", "contact": "(555) 010-1000", "url": "https://county-portal.example.gov/clerk" },
+    { "id": "dept-public-works", "name": "Public Works", "summary": "Roads, permits for grading and encroachment, stormwater.", "contact": "(555) 010-1200", "url": "https://county-portal.example.gov/public-works" },
+    { "id": "dept-health", "name": "Public Health", "summary": "Clinics, vital records, food-facility inspections.", "contact": "(555) 010-1400", "url": "https://county-portal.example.gov/health" },
+    { "id": "dept-elections", "name": "Elections", "summary": "Voter registration, ballots, polling locations.", "contact": "(555) 010-1600", "url": "https://county-portal.example.gov/elections" },
+    { "id": "dept-tax", "name": "Treasurer-Tax Collector", "summary": "Property tax billing and payments.", "contact": "(555) 010-1800", "url": "https://county-portal.example.gov/tax" },
+    { "id": "dept-emergency", "name": "Office of Emergency Services", "summary": "Alerts, preparedness, evacuation info.", "contact": "(555) 010-2000", "url": "https://county-portal.example.gov/oes" }
+  ],
+  "services": [
+    { "id": "svc-marriage-license", "department": "dept-clerk", "name": "Marriage License", "category": "online-services", "summary": "Apply for a public or confidential marriage license; appointment required.", "fee_usd": 92, "online": true },
+    { "id": "svc-building-permit", "department": "dept-public-works", "name": "Building Permit", "category": "permits", "summary": "Permit for new construction, additions, and certain remodels.", "fee_usd": 175, "online": true },
+    { "id": "svc-property-tax-pay", "department": "dept-tax", "name": "Pay Property Tax", "category": "taxes", "summary": "Pay annual secured property tax in two installments.", "fee_usd": 0, "online": true },
+    { "id": "svc-birth-certificate", "department": "dept-health", "name": "Birth Certificate Copy", "category": "online-services", "summary": "Request a certified copy of a birth record.", "fee_usd": 29, "online": true },
+    { "id": "svc-voter-registration", "department": "dept-elections", "name": "Voter Registration", "category": "voting", "summary": "Register or update your voter registration online.", "fee_usd": 0, "online": true },
+    { "id": "svc-report-pothole", "department": "dept-public-works", "name": "Report a Pothole", "category": "reporting-concerns", "summary": "Report road maintenance issues for assessment.", "fee_usd": 0, "online": true }
+  ],
+  "faqs": [
+    { "id": "faq-permit-time", "category": "permits", "q": "How long does a building permit take?", "a": "Most simple residential permits in Westvale County are reviewed within 10 business days (fictional). Complex projects take longer." },
+    { "id": "faq-tax-due", "category": "taxes", "q": "When is property tax due?", "a": "Fictional schedule: first installment due Nov 1, delinquent after Dec 10; second installment due Feb 1, delinquent after Apr 10." },
+    { "id": "faq-vote-deadline", "category": "voting", "q": "What is the voter registration deadline?", "a": "Fictional: register at least 15 days before an election; same-day conditional registration may be available at designated sites." },
+    { "id": "faq-birth-record", "category": "online-services", "q": "How do I get a birth certificate?", "a": "Request a certified copy online through Public Health; valid ID and a $29 (fictional) fee apply." },
+    { "id": "faq-emergency-alerts", "category": "emergency", "q": "How do I sign up for emergency alerts?", "a": "Fictional: opt in to Westvale Alerts for evacuation, fire, and weather notices by SMS or email." }
+  ],
+  "emergency": {
+    "disclaimer": "For real emergencies call 911. This is fictional prototype content.",
+    "alerts_signup": "https://county-portal.example.gov/oes/alerts",
+    "topics": ["wildfire", "flood", "evacuation", "power-outage", "extreme-heat"]
+  }
+}

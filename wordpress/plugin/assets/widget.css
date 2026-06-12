@@ -1,0 +1,123 @@
+/* County Assistant — widget styles (prototype). Minimal, accessible, themeable. */
+:root {
+  --ca-primary: #0b5cab;
+  --ca-primary-contrast: #ffffff;
+  --ca-bg: #ffffff;
+  --ca-user: #e7f0fb;
+  --ca-assistant: #f3f4f6;
+  --ca-text: #1b1b1b;
+  --ca-radius: 12px;
+}
+
+.ca-launcher {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ca-primary);
+  color: var(--ca-primary-contrast);
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  z-index: 2147483000;
+}
+.ca-launcher:focus-visible { outline: 3px solid #ffbf47; outline-offset: 2px; }
+
+.ca-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 88px;
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background: var(--ca-bg);
+  color: var(--ca-text);
+  border-radius: var(--ca-radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2147483000;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+.ca-panel[hidden] { display: none; }
+
+.ca-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ca-primary);
+  color: var(--ca-primary-contrast);
+}
+.ca-title { font-weight: 600; }
+.ca-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ca-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ca-msg {
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 85%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.ca-user { align-self: flex-end; background: var(--ca-user); }
+.ca-assistant { align-self: flex-start; background: var(--ca-assistant); }
+
+.ca-citations {
+  align-self: flex-start;
+  font-size: 12px;
+  color: #444;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.ca-citations-title { font-weight: 600; margin-right: 4px; }
+.ca-cite {
+  background: #eef2f7;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--ca-primary);
+  text-decoration: none;
+}
+
+.ca-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #eee; }
+.ca-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.ca-send {
+  background: var(--ca-primary);
+  color: var(--ca-primary-contrast);
+  border: none;
+  border-radius: 8px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+.ca-send:disabled { opacity: 0.6; cursor: default; }
+
+.ca-disclaimer { padding: 8px 12px; font-size: 11px; color: #666; border-top: 1px solid #f0f0f0; }

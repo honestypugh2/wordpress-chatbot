@@ -1,0 +1,9 @@
+{
+  "session_id": "demo-0001",
+  "message": "How do I apply for a building permit and how much does it cost?",
+  "locale": "en-US",
+  "context": {
+    "page": "https://county-portal.example.gov/public-works/permits",
+    "channel": "wordpress-widget"
+  }
+}

@@ -1,0 +1,74 @@
+<!--
+  County Assistant — APIM chat operation policy (APPLIED / runnable subset)
+
+  This is the policy actually applied to POST /assistant/chat in the prototype.
+  It is a deployable subset of chat-operation.policy.xml, omitting the AI-gateway
+  features that require extra provisioning (azure-openai-token-limit and the
+  semantic-cache pair both need an embeddings backend + Named Values). Re-enable
+  those from the FULL example once an embeddings backend is configured.
+
+  Flow: WordPress server-side proxy -> APIM (subscription key) -> Azure Function.
+  The backend Function uses anonymous auth, so no backend-token swap is needed.
+-->
+<policies>
+  <inbound>
+    <base />
+
+    <!-- CORS. The widget calls APIM server-side via the WordPress proxy, so this
+         is belt-and-suspenders for any direct browser calls during testing. -->
+    <cors allow-credentials="false">
+      <allowed-origins>
+        <origin>http://localhost:8083</origin>
+        <origin>https://county-portal.example.gov</origin>
+      </allowed-origins>
+      <allowed-methods>
+        <method>OPTIONS</method>
+        <method>POST</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>Content-Type</header>
+        <header>X-Correlation-Id</header>
+        <header>Ocp-Apim-Subscription-Key</header>
+      </allowed-headers>
+      <expose-headers>
+        <header>X-Correlation-Id</header>
+      </expose-headers>
+    </cors>
+
+    <!-- Correlation: reuse inbound id or mint one; flow it downstream. -->
+    <set-variable name="correlationId"
+      value="@(context.Request.Headers.GetValueOrDefault("X-Correlation-Id", Guid.NewGuid().ToString("N")))" />
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables["correlationId"])</value>
+    </set-header>
+
+    <!-- Per-IP rate limiting for basic abuse protection. -->
+    <rate-limit-by-key calls="60" renewal-period="60"
+      counter-key="@(context.Request.IpAddress)" />
+
+    <!-- Route to the Function backend and rewrite to its /api/chat route. -->
+    <set-backend-service backend-id="assistant-backend" />
+    <rewrite-uri template="/api/chat" />
+  </inbound>
+
+  <backend>
+    <forward-request timeout="60" />
+  </backend>
+
+  <outbound>
+    <base />
+    <!-- Echo correlation id back to the caller. -->
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables["correlationId"])</value>
+    </set-header>
+    <!-- Strip server-identifying headers. -->
+    <set-header name="Server" exists-action="delete" />
+  </outbound>
+
+  <on-error>
+    <base />
+    <set-header name="X-Correlation-Id" exists-action="override">
+      <value>@((string)context.Variables.GetValueOrDefault("correlationId", ""))</value>
+    </set-header>
+  </on-error>
+</policies>

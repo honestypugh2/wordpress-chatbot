@@ -1,0 +1,24 @@
+<!--
+  Fragment: backend routing + correlation headers.
+  Routes to the FastAPI backend (which fronts Azure AI Foundry) and ensures a
+  correlation id flows end to end.
+-->
+<fragment>
+  <!-- Reuse inbound correlation id or mint a new one. -->
+  <set-variable name="correlationId"
+    value="@(context.Request.Headers.GetValueOrDefault("X-Correlation-Id", Guid.NewGuid().ToString("N")))" />
+  <set-header name="X-Correlation-Id" exists-action="override">
+    <value>@((string)context.Variables["correlationId"])</value>
+  </set-header>
+
+  <!-- Pass APIM request id for cross-system tracing. -->
+  <set-header name="X-APIM-Request-Id" exists-action="override">
+    <value>@(context.RequestId.ToString())</value>
+  </set-header>
+
+  <!-- Route to the backend. Prefer a named backend with health probes + retries. -->
+  <set-backend-service backend-id="county-backend" />
+  <retry condition="@(context.Response.StatusCode >= 500)" count="2" interval="1" first-fast-retry="true">
+    <forward-request timeout="30" />
+  </retry>
+</fragment>

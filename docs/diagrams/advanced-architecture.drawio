@@ -1,0 +1,122 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="advanced-architecture" name="Advanced">
+    <mxGraphModel dx="1300" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1240" pageHeight="540" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Advanced Architecture — full Azure intelligence layer (mapped to infra/ Bicep modules)" style="text;html=1;align=left;verticalAlign=middle;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="14" width="900" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="zAws" value="AWS — Experience Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FF9900;verticalAlign=top;fontStyle=1;fontColor=#7A4900;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="60" width="210" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="zGw" value="Azure API Management — AI Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#0078D4;verticalAlign=top;fontStyle=1;fontColor=#004578;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="60" width="250" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="zApp" value="Azure — Application (backend host)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#0078D4;verticalAlign=top;fontStyle=1;fontColor=#004578;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="60" width="240" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="zFoundry" value="Azure AI Foundry — Intelligence Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#00ACC1;verticalAlign=top;fontStyle=1;fontColor=#004578;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="930" y="60" width="290" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="zData" value="Grounding &amp; Data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F8E9;strokeColor=#7FBA00;verticalAlign=top;fontStyle=1;fontColor=#3A5400;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="360" width="520" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="zObs" value="Observability (monitoring.bicep)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#8E24AA;verticalAlign=top;fontStyle=1;fontColor=#4A148C;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="930" y="360" width="290" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="user" value="Resident /&#10;Public User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="20" y="160" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cf" value="CloudFront / WAF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#7A4900;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="160" y="100" width="170" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="wp" value="WordPress + Plugin Proxy&#10;(server-side APIM key)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9900;strokeColor=#7A4900;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="160" y="165" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="widget" value="Chat Widget" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFB74D;strokeColor=#7A4900;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="160" y="245" width="170" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="chatapi" value="Chat API&#10;POST /assistant/chat" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="400" y="120" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="aoaiapi" value="Model API  /openai&#10;managed-identity backend auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="400" y="185" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="gwnote" value="auth • rate limit • token-limit + token-metrics • content safety • logging" style="text;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#004578;" vertex="1" parent="1">
+          <mxGeometry x="400" y="248" width="210" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="func" value="Azure Function (Flex)&#10;default — functionapp.bicep" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="680" y="100" width="200" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="aca" value="Container Apps (FastAPI)&#10;alt — containerapp.bicep" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90CAF9;strokeColor=#004578;fontColor=#0D3C61;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="156" width="200" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="mi" value="Managed Identity&#10;(identity.bicep)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="680" y="215" width="95" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="kv" value="Key Vault&#10;(keyvault.bicep)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#004578;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="785" y="215" width="95" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fagent" value="County Agent (prompt agent)&#10;foundry.bicep" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="950" y="100" width="250" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmodel" value="Model Deployment(s)&#10;gpt-4o-mini • embeddings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="950" y="156" width="120" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="fsafety" value="Content Safety&#10;/ prompt shield" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="156" width="120" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ftools" value="Tools — AI Search tool • Bing Custom Search tool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#80DEEA;strokeColor=#004578;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="950" y="225" width="250" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="search" value="Azure AI Search&#10;(county-kb index) — search.bicep" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FBA00;strokeColor=#3A5400;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="400" y="400" width="230" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="bing" value="Grounding with Bing&#10;Custom Search (preview)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#AED581;strokeColor=#3A5400;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="400" y="458" width="230" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="kbsrc" value="Synthetic KB Source&#10;(data/county_kb)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FBA00;strokeColor=#3A5400;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="650" y="400" width="230" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="stor" value="Function Storage&#10;(identity-based, Flex)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#AED581;strokeColor=#3A5400;fontColor=#1B1B1B;" vertex="1" parent="1">
+          <mxGeometry x="650" y="458" width="230" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="appi" value="Application Insights" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#AB47BC;strokeColor=#4A148C;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="950" y="400" width="250" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="law" value="Log Analytics Workspace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#AB47BC;strokeColor=#4A148C;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="950" y="458" width="250" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="user" target="cf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="cf" target="wp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="wp" target="widget"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="widget" target="chatapi"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a5" value="backend routing" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="chatapi" target="func"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="func" target="fagent"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a7" value="model calls via gateway" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="func" target="aoaiapi"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="aoaiapi" target="fmodel"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a9" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="fagent" target="fmodel"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a10" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="fagent" target="fsafety"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a11" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="fagent" target="ftools"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a12" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="ftools" target="search"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a13" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="ftools" target="bing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a14" value="ingest (WP REST)" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="kbsrc" target="search"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a15" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;dashed=1;" edge="1" parent="1" source="func" target="mi"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a16" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;dashed=1;" edge="1" parent="1" source="func" target="kv"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a17" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;dashed=1;" edge="1" parent="1" source="func" target="stor"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a18" value="telemetry" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;dashed=1;fontSize=10;" edge="1" parent="1" source="func" target="appi"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a19" value="token metrics" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;dashed=1;fontSize=10;" edge="1" parent="1" source="aoaiapi" target="appi"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a20" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;dashed=1;" edge="1" parent="1" source="appi" target="law"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

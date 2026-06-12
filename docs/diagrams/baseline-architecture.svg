@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#37474F"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="980" height="460" fill="#ffffff"/>
+  <text x="20" y="34" font-size="16" font-weight="bold" fill="#1b1b1b">Baseline Architecture — WordPress (AWS) → APIM (AI Gateway) → Azure AI Foundry</text>
+
+  <!-- zones -->
+  <rect x="150" y="70" width="180" height="320" rx="10" fill="#FFF3E0" stroke="#FF9900" stroke-dasharray="6 4"/>
+  <text x="240" y="90" font-size="12" font-weight="bold" fill="#7A4900" text-anchor="middle">AWS — Experience Layer</text>
+  <rect x="360" y="70" width="600" height="320" rx="10" fill="#E3F2FD" stroke="#0078D4" stroke-dasharray="6 4"/>
+  <text x="660" y="90" font-size="12" font-weight="bold" fill="#004578" text-anchor="middle">Azure — Intelligence Layer</text>
+  <rect x="660" y="100" width="280" height="270" rx="10" fill="#E0F7FA" stroke="#00ACC1" stroke-dasharray="6 4"/>
+  <text x="800" y="120" font-size="12" font-weight="bold" fill="#004578" text-anchor="middle">Azure AI Foundry</text>
+
+  <!-- edges -->
+  <path d="M130,227 L170,227" stroke="#37474F" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M310,227 L380,170" stroke="#37474F" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M455,200 L455,260" stroke="#37474F" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="463" y="234" font-size="10" fill="#37474F">POST /assistant/chat</text>
+  <path d="M530,290 L680,180" stroke="#37474F" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M800,168 L810,168" stroke="#37474F" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M740,196 L760,280" stroke="#37474F" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- nodes -->
+  <ellipse cx="75" cy="227" rx="55" ry="32" fill="#ECEFF1" stroke="#607D8B" stroke-width="2"/>
+  <text x="75" y="223" font-size="12" fill="#263238" text-anchor="middle">Resident /</text>
+  <text x="75" y="239" font-size="12" fill="#263238" text-anchor="middle">Public User</text>
+
+  <rect x="170" y="195" width="140" height="64" rx="8" fill="#FF9900" stroke="#7A4900" stroke-width="2"/>
+  <text x="240" y="223" font-size="12" fill="#1b1b1b" text-anchor="middle">WordPress Site</text>
+  <text x="240" y="239" font-size="12" fill="#1b1b1b" text-anchor="middle">+ Chat Widget</text>
+
+  <rect x="380" y="140" width="150" height="60" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="455" y="166" font-size="12" fill="#fff" text-anchor="middle">API Management</text>
+  <text x="455" y="182" font-size="12" fill="#fff" text-anchor="middle">(AI Gateway)</text>
+
+  <rect x="380" y="260" width="150" height="60" rx="8" fill="#0078D4" stroke="#004578" stroke-width="2"/>
+  <text x="455" y="286" font-size="12" fill="#fff" text-anchor="middle">Azure Function</text>
+  <text x="455" y="302" font-size="12" fill="#fff" text-anchor="middle">(default backend)</text>
+
+  <rect x="680" y="140" width="120" height="56" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+  <text x="740" y="164" font-size="12" fill="#1b1b1b" text-anchor="middle">County Agent</text>
+  <text x="740" y="180" font-size="12" fill="#1b1b1b" text-anchor="middle">(prompt agent)</text>
+
+  <rect x="810" y="140" width="110" height="56" rx="8" fill="#50E6FF" stroke="#004578" stroke-width="2"/>
+  <text x="865" y="164" font-size="12" fill="#1b1b1b" text-anchor="middle">Model</text>
+  <text x="865" y="180" font-size="12" fill="#1b1b1b" text-anchor="middle">Deployment</text>
+
+  <rect x="700" y="280" width="200" height="60" rx="8" fill="#7FBA00" stroke="#3A5400" stroke-width="2"/>
+  <text x="800" y="306" font-size="12" fill="#1b1b1b" text-anchor="middle">Retrieval</text>
+  <text x="800" y="322" font-size="12" fill="#1b1b1b" text-anchor="middle">(Synthetic County KB)</text>
+</svg>
