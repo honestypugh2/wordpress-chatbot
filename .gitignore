@@ -41,6 +41,9 @@ venv.bak/
 # Excluded source directories
 # src/agents_af/
 
+# Local-only docs (not published to the remote repo)
+docs/demo-script.md
+
 # Environment variables
 .env
 .env.local
