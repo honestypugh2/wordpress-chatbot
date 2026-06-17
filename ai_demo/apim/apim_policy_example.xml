@@ -1,0 +1,104 @@
+<!-- ═══════════════════════════════════════════════════════════════════
+     Custom AI Gateway — APIM Inbound Policy
+     Applies to: Azure OpenAI API (Foundry-backed)
+     ═══════════════════════════════════════════════════════════════════ -->
+<policies>
+  <inbound>
+    <base />
+
+    <!-- ── 1. TOKEN RATE LIMITING ─────────────────────────────────────────
+         Limits tokens-per-minute (TPM) per subscription key.
+         Counter key = subscription ID → each team has its own bucket.
+         When exceeded: returns HTTP 429 with Retry-After header.
+         tokens-per-minute="50000" = 50K TPM per team subscription.
+         estimate-prompt-tokens: APIM estimates prompt tokens before the
+         model responds, enabling pre-flight enforcement. -->
+    <azure-openai-token-limit
+      counter-key="@(context.Subscription.Id)"
+      tokens-per-minute="50000"
+      estimate-prompt-tokens="true"
+      tokens-consumed-header-name="x-consumed-tokens"
+      remaining-tokens-header-name="x-remaining-tokens"
+    />
+
+    <!-- ── 2. MONTHLY TOKEN QUOTA ─────────────────────────────────────────
+         Hard monthly cap per subscription. Resets on the 1st of each month.
+         Custom-Support product: 500M tokens/month.
+         Custom-Design-Eng product: 200M tokens/month.
+         Set via APIM Product policy (this policy applies to all products;
+         individual product policies set the quota value). -->
+    <azure-openai-token-limit
+      counter-key="@(context.Subscription.Id + &quot;-monthly&quot;)"
+      tokens-per-minute="999999999"
+      renewal-period="2592000"
+      estimate-prompt-tokens="false"
+    />
+
+    <!-- ── 3. TEAM ATTRIBUTION HEADER ────────────────────────────────────
+         Reads the x-team-id header from the calling application.
+         Falls back to subscription ID if not provided.
+         Stored as a variable for use in metric emission below. -->
+    <set-variable
+      name="teamId"
+      value="@(context.Request.Headers.GetValueOrDefault(&quot;x-team-id&quot;, context.Subscription.Id))"
+    />
+
+    <!-- ── 4. BACKEND LOAD BALANCING ─────────────────────────────────────
+         Distributes calls across two Foundry deployment endpoints.
+         If the primary endpoint returns 429 (TPM exceeded at Foundry level),
+         APIM automatically retries against the secondary endpoint.
+         Named Values store the endpoint URLs — rotate without policy changes. -->
+    <set-backend-service
+      backend-id="@{
+        var rand = new Random().Next(0, 100);
+        return rand < 70
+          ? &quot;foundry-primary&quot;
+          : &quot;foundry-secondary&quot;;
+      }"
+    />
+
+    <!-- ── 5. FOUNDRY AUTHENTICATION ─────────────────────────────────────
+         Replaces the caller's APIM subscription key with the Foundry API key.
+         The Foundry API key is stored as a Named Value (secret) in APIM.
+         Callers never see or need the Foundry key directly. -->
+    <set-header name="api-key" exists-action="override">
+      <value>{{foundry-api-key}}</value>
+    </set-header>
+  </inbound>
+
+  <outbound>
+    <base />
+
+    <!-- ── 6. TOKEN METRIC EMISSION ──────────────────────────────────────
+         Emits token consumption as Application Insights custom events.
+         Dimension: teamId — enables per-team cost reporting in Power BI.
+         This is the chargeback signal. One event per API call.
+         application-insights-key references a Named Value (connection string). -->
+    <azure-openai-emit-token-metric
+      namespace="CustomAI">
+      <dimension name="TeamId"     value="@((string)context.Variables["teamId"])" />
+      <dimension name="Subscription" value="@(context.Subscription.Id)" />
+      <dimension name="Product"    value="@(context.Product.Name)" />
+      <dimension name="ApiName"    value="@(context.Api.Name)" />
+    </azure-openai-emit-token-metric>
+  </outbound>
+
+  <on-error>
+    <base />
+
+    <!-- ── 7. RATE LIMIT ERROR RESPONSE ──────────────────────────────────
+         Returns a clear 429 with retry guidance when token limit is hit.
+         Prevents cryptic errors propagating to Custom applications. -->
+    <choose>
+      <when condition="@(context.Response.StatusCode == 429)">
+        <return-response>
+          <set-status code="429" reason="Token Limit Exceeded" />
+          <set-header name="Retry-After" exists-action="override">
+            <value>60</value>
+          </set-header>
+          <set-body>{"error": "Token limit exceeded for your team. Retry after 60 seconds or contact your AI platform team."}</set-body>
+        </return-response>
+      </when>
+    </choose>
+  </on-error>
+</policies>

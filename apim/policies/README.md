@@ -67,3 +67,37 @@ The prototype runs APIM as **two** governed surfaces:
 - `backend-api-token` — credential APIM presents to the backend.
 - `content-safety-endpoint`, `content-safety-key` — Content Safety resource.
 - Backend `county-backend` and `embeddings-backend` registrations.
+- `entra-openid-config`, `entra-audience` — Entra ID OIDC config URL and API
+  audience for the per-user JWT attribution path (see below). `entra-audience`
+  requires an Entra app registration.
+
+## Per-user cost attribution (capture user identity here)
+
+Per-user identity capture belongs in **these production policies** — not just the
+`/ai_demo/apim` illustration copy — so it is governed, versioned, and applied
+consistently. The applied AOAI policy
+([aoai-api.applied.xml](aoai-api.applied.xml)) already implements this:
+
+1. **Identity resolution.** Resolves a `userId` with precedence **Entra `oid` ›
+   `x-user-id` header › subscription id** (previously everything keyed on
+   `context.Subscription?.Id`, which is per-team, not per-user).
+2. **Per-user metering & metrics.** `azure-openai-token-limit` keys its
+   `counter-key` on the resolved `userId`, and `azure-openai-emit-token-metric`
+   emits `UserId` / `TeamId` dimensions for chargeback/showback dashboards.
+3. **Entra `oid` preferred; `x-user-id` is trusted-proxy only.** The JWT path is
+   non-breaking — it runs only when an `Authorization` bearer is present, so
+   api-key callers are unaffected. `x-user-id` must never be accepted directly
+   from a browser; the WordPress server-side proxy is the correct place to stamp a
+   trusted identity.
+4. **Reuse via a fragment (recommended next step).** Promote the identity
+   resolution into `user-identity.fragment.xml` and `<include-fragment>` it from
+   both the AOAI API and the chat operation, mirroring the existing
+   `rate-limit.fragment.xml` / `token-throttle.fragment.xml` pattern.
+
+> **NOTE — Entra JWT path not yet applied to live.** Applying the JWT path needs
+> the `entra-openid-config` and `entra-audience` Named Values, and `entra-audience`
+> requires an Entra **app registration**. The current subscription may not grant
+> app-registration privileges —
+> complete that step in a subscription/tenant where you have admin rights, create
+> the Named Values, then re-apply the policy. Until then the live policy runs
+> header + subscription attribution only.
