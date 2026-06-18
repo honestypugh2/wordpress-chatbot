@@ -94,6 +94,18 @@ consistently. The applied AOAI policy
    both the AOAI API and the chat operation, mirroring the existing
    `rate-limit.fragment.xml` / `token-throttle.fragment.xml` pattern.
 
+5. **FinOps dashboards (per-user).** The `genai` `azure-openai-emit-token-metric`
+   also emits a `ModelName` dimension (the pricing key). Per-user cost views built
+   on it live in [../dashboards](../dashboards):
+   - [per-user-cost.kql](../dashboards/per-user-cost.kql) — paste-in Azure Monitor
+     Workbook queries (spend by user, over time, budget vs actual, team roll-up,
+     `oid`→name enrichment); `AppMetrics` + `customMetrics` schema variants.
+   - [per-user-finops-dashboard.bicep](../dashboards/per-user-finops-dashboard.bicep)
+     — deployable Portal dashboard whose tiles mirror the upstream AI-Gateway FinOps
+     dashboard but group by `UserId` (Entra `oid`) instead of `ApimSubscriptionId`.
+   Requires `PRICING_CL` seeded with a row per `ModelName` (incl. `model-router`)
+   and, for budgets, a `USER_QUOTA_CL` table (`UserId`, `CostQuota`).
+
 > **NOTE — Entra JWT path not yet applied to live.** Applying the JWT path needs
 > the `entra-openid-config` and `entra-audience` Named Values, and `entra-audience`
 > requires an Entra **app registration**. The current subscription may not grant

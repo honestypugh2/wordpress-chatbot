@@ -132,6 +132,33 @@ module monitoring 'modules/monitoring.bicep' = {
   }
 }
 
+// FinOps: custom pricing/quota/directory tables + DCE/DCR for per-user cost
+// attribution, and the Portal dashboard whose tiles group spend by UserId
+// (Entra 'oid') instead of APIM subscription. Seed rows with
+// scripts/seed_finops_tables.py using the finops* outputs below.
+module finops 'modules/finops.bicep' = {
+  name: 'finops'
+  params: {
+    location: location
+    logAnalyticsName: monitoring.outputs.logAnalyticsName
+    baseName: baseName
+    shortSuffix: shortSuffix
+    principalId: identity.outputs.principalId
+    seedPrincipalId: searchIndexAdminPrincipalId
+    seedPrincipalType: searchIndexAdminPrincipalType
+    tags: tags
+  }
+}
+
+module perUserDashboard '../apim/dashboards/per-user-finops-dashboard.bicep' = {
+  name: 'perUserFinOpsDashboard'
+  params: {
+    resourceSuffix: shortSuffix
+    workspaceName: monitoring.outputs.logAnalyticsName
+    workspaceId: monitoring.outputs.logAnalyticsId
+  }
+}
+
 module keyvault 'modules/keyvault.bicep' = {
   name: 'keyvault'
   params: {
@@ -254,3 +281,10 @@ output apimGatewayUrl string = apim.outputs.gatewayUrl
 output appInsightsConnectionString string = monitoring.outputs.appInsightsConnectionString
 output backendHost string = backendHost
 output backendFqdn string = backendFqdn
+
+// FinOps seeding (scripts/seed_finops_tables.py reads these).
+output finopsLogsIngestionEndpoint string = finops.outputs.dceLogsIngestionEndpoint
+output finopsDcrImmutableId string = finops.outputs.dcrImmutableId
+output finopsPricingStream string = finops.outputs.pricingStreamName
+output finopsUserQuotaStream string = finops.outputs.userQuotaStreamName
+output finopsUserDirectoryStream string = finops.outputs.userDirectoryStreamName

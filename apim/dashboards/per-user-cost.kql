@@ -1,0 +1,194 @@
+// ════════════════════════════════════════════════════════════════════════════
+//  Per-User AI Cost Attribution — FinOps queries (Azure Monitor Workbook)
+// ════════════════════════════════════════════════════════════════════════════
+//
+//  Source of truth: the `genai` azure-openai-emit-token-metric emitted by the
+//  APIM AI-gateway policies (apim/policies/aoai-api.applied.xml,
+//  apim/policies/aoai-api.policy.xml, ai_demo/apim/per-user-cost-attribution.policy.xml).
+//
+//  The `UserId` dimension carries the resolved per-user identity with precedence:
+//      1. Entra ID 'oid' claim   (PRODUCTION path — validated JWT bearer)
+//      2. x-user-id header        (trusted server-side proxy; demo/dev only)
+//      3. subscription id         (per-consumer fallback)
+//  So these queries are wired to the Entra JWT path automatically — when callers
+//  present a bearer token, UserId is the tamper-proof 'oid' GUID; the x-user-id
+//  fallback only appears for demo/dev traffic.
+//
+//  Pricing mirrors the upstream FinOps dashboard exactly:
+//      cost = (PromptTokens * InputTokensPrice + CompletionTokens * OutputTokensPrice) / 1000
+//  ModelName is the RESOLVED model the router served (response header
+//  x-ms-served-model, e.g. "gpt-4.1-2025-04-14"), not the "model-router"
+//  deployment — so cost is attributed to the real underlying model. PRICING_CL.Model
+//  must contain a row for each served-model value. Snapshot suffixes (-YYYY-MM-DD)
+//  change over time; to price by family instead and avoid new snapshots silently
+//  dropping from the join, normalize before joining, e.g.:
+//      | extend ModelName = replace_regex(ModelName, @"-\d{4}-\d{2}-\d{2}$", "")
+//  and seed PRICING_CL with family names ("gpt-4.1", "gpt-5-mini", ...).
+//
+//  SCHEMA NOTE (verified in repo memory):
+//    • Log Analytics workspace Logs blade  -> table AppMetrics  (Sum / Properties / Name)
+//    • Application Insights resource Logs   -> table customMetrics (valueSum / customDimensions / name)
+//  Workbooks/Dashboards scoped to the workspace use AppMetrics (Query A, default).
+//  Use the customMetrics variant (Query A2) only when the query scope is the
+//  Application Insights resource.
+//
+//  HOW TO USE: paste ONE block per Workbook query/tile. Pick chart types in the
+//  Workbook visualization settings (table, bar, time chart, etc.).
+// ════════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query A — AI spend by user (current month)        [chart: bar / grid]
+// Workspace (AppMetrics) schema.
+// ─────────────────────────────────────────────────────────────────────────────
+let pricing = PRICING_CL
+    | summarize arg_max(TimeGenerated, *) by Model
+    | project Model, InputTokensPrice, OutputTokensPrice;
+AppMetrics
+| where TimeGenerated >= startofmonth(now()) and TimeGenerated <= endofmonth(now())
+| where Name in ("Prompt Tokens", "Completion Tokens")
+| extend UserId    = tostring(Properties["UserId"]),
+         ModelName = tostring(Properties["ModelName"])
+| where isnotempty(UserId) and UserId != "anonymous"
+| summarize PromptTokens     = sumif(Sum, Name == "Prompt Tokens"),
+            CompletionTokens = sumif(Sum, Name == "Completion Tokens")
+        by UserId, ModelName
+| join kind=inner pricing on $left.ModelName == $right.Model
+| extend InputCost  = PromptTokens * InputTokensPrice,
+         OutputCost = CompletionTokens * OutputTokensPrice
+| summarize InputCost = sum(InputCost), OutputCost = sum(OutputCost) by UserId
+| extend TotalCost = round((InputCost + OutputCost) / 1000, 4)
+| project UserId, TotalCost
+| order by TotalCost desc
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query A2 — same as Query A but for the APPLICATION INSIGHTS resource scope
+// (classic customMetrics schema). Use only if your tile is scoped to App Insights.
+// ─────────────────────────────────────────────────────────────────────────────
+// let pricing = PRICING_CL
+//     | summarize arg_max(TimeGenerated, *) by Model
+//     | project Model, InputTokensPrice, OutputTokensPrice;
+// customMetrics
+// | where timestamp >= startofmonth(now()) and timestamp <= endofmonth(now())
+// | where name in ("Prompt Tokens", "Completion Tokens")
+// | extend UserId    = tostring(customDimensions["UserId"]),
+//          ModelName = tostring(customDimensions["ModelName"])
+// | where isnotempty(UserId) and UserId != "anonymous"
+// | summarize PromptTokens     = sumif(valueSum, name == "Prompt Tokens"),
+//             CompletionTokens = sumif(valueSum, name == "Completion Tokens")
+//         by UserId, ModelName
+// | join kind=inner pricing on $left.ModelName == $right.Model
+// | extend InputCost  = PromptTokens * InputTokensPrice,
+//          OutputCost = CompletionTokens * OutputTokensPrice
+// | summarize InputCost = sum(InputCost), OutputCost = sum(OutputCost) by UserId
+// | extend TotalCost = round((InputCost + OutputCost) / 1000, 4)
+// | project UserId, TotalCost
+// | order by TotalCost desc
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query B — AI spend over time, split by user      [chart: time chart / column]
+// ─────────────────────────────────────────────────────────────────────────────
+let pricing = PRICING_CL
+    | summarize arg_max(TimeGenerated, *) by Model
+    | project Model, InputTokensPrice, OutputTokensPrice;
+AppMetrics
+| where Name in ("Prompt Tokens", "Completion Tokens")
+| extend UserId    = tostring(Properties["UserId"]),
+         ModelName = tostring(Properties["ModelName"])
+| where isnotempty(UserId) and UserId != "anonymous"
+| summarize PromptTokens     = sumif(Sum, Name == "Prompt Tokens"),
+            CompletionTokens = sumif(Sum, Name == "Completion Tokens")
+        by UserId, ModelName, bin(TimeGenerated, 1h)
+| join kind=inner pricing on $left.ModelName == $right.Model
+| extend TotalCost = (PromptTokens * InputTokensPrice + CompletionTokens * OutputTokensPrice) / 1000
+| summarize TotalCost = round(sum(TotalCost), 4) by TimeGenerated, UserId
+| order by TimeGenerated asc
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query C — Budget vs actual by user (current month)   [chart: bar]
+// Requires a per-user quota table USER_QUOTA_CL (UserId, CostQuota) — the
+// per-user analogue of the upstream SUBSCRIPTION_QUOTA_CL. Seed it the same way.
+// ─────────────────────────────────────────────────────────────────────────────
+let pricing = PRICING_CL
+    | summarize arg_max(TimeGenerated, *) by Model
+    | project Model, InputTokensPrice, OutputTokensPrice;
+let spend = AppMetrics
+    | where TimeGenerated >= startofmonth(now()) and TimeGenerated <= endofmonth(now())
+    | where Name in ("Prompt Tokens", "Completion Tokens")
+    | extend UserId    = tostring(Properties["UserId"]),
+             ModelName = tostring(Properties["ModelName"])
+    | where isnotempty(UserId) and UserId != "anonymous"
+    | summarize PromptTokens     = sumif(Sum, Name == "Prompt Tokens"),
+                CompletionTokens = sumif(Sum, Name == "Completion Tokens")
+            by UserId, ModelName
+    | join kind=inner pricing on $left.ModelName == $right.Model
+    | extend InputCost  = PromptTokens * InputTokensPrice,
+             OutputCost = CompletionTokens * OutputTokensPrice
+    | summarize InputCost = sum(InputCost), OutputCost = sum(OutputCost) by UserId
+    | extend TotalCost = (InputCost + OutputCost) / 1000;
+spend
+| join kind=inner (
+    USER_QUOTA_CL
+    | summarize arg_max(TimeGenerated, *) by UserId
+    | project UserId, CostQuota
+  ) on UserId
+| project UserId, CostQuota, TotalCost = round(TotalCost, 4)
+| order by TotalCost desc
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query D — Team / department roll-up (showback)      [chart: bar / pie]
+// Uses the TeamId dimension emitted alongside UserId.
+// ─────────────────────────────────────────────────────────────────────────────
+let pricing = PRICING_CL
+    | summarize arg_max(TimeGenerated, *) by Model
+    | project Model, InputTokensPrice, OutputTokensPrice;
+AppMetrics
+| where TimeGenerated >= startofmonth(now()) and TimeGenerated <= endofmonth(now())
+| where Name in ("Prompt Tokens", "Completion Tokens")
+| extend TeamId    = tostring(Properties["TeamId"]),
+         ModelName = tostring(Properties["ModelName"])
+| where isnotempty(TeamId)
+| summarize PromptTokens     = sumif(Sum, Name == "Prompt Tokens"),
+            CompletionTokens = sumif(Sum, Name == "Completion Tokens")
+        by TeamId, ModelName
+| join kind=inner pricing on $left.ModelName == $right.Model
+| extend InputCost  = PromptTokens * InputTokensPrice,
+         OutputCost = CompletionTokens * OutputTokensPrice
+| summarize TotalCost = round(sum((InputCost + OutputCost)) / 1000, 4) by TeamId
+| order by TotalCost desc
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query E (optional) — friendly names for Entra 'oid' GUIDs
+// Production UserId values are Entra object-ids (GUIDs). Left-join a directory
+// map USER_DIRECTORY_CL (UserId, DisplayName, Upn) to show people instead of
+// GUIDs. Falls back to the raw oid when no mapping exists.
+// ─────────────────────────────────────────────────────────────────────────────
+let pricing = PRICING_CL
+    | summarize arg_max(TimeGenerated, *) by Model
+    | project Model, InputTokensPrice, OutputTokensPrice;
+let directory = USER_DIRECTORY_CL
+    | summarize arg_max(TimeGenerated, *) by UserId
+    | project UserId, DisplayName, Upn;
+AppMetrics
+| where TimeGenerated >= startofmonth(now()) and TimeGenerated <= endofmonth(now())
+| where Name in ("Prompt Tokens", "Completion Tokens")
+| extend UserId    = tostring(Properties["UserId"]),
+         ModelName = tostring(Properties["ModelName"])
+| where isnotempty(UserId) and UserId != "anonymous"
+| summarize PromptTokens     = sumif(Sum, Name == "Prompt Tokens"),
+            CompletionTokens = sumif(Sum, Name == "Completion Tokens")
+        by UserId, ModelName
+| join kind=inner pricing on $left.ModelName == $right.Model
+| extend InputCost  = PromptTokens * InputTokensPrice,
+         OutputCost = CompletionTokens * OutputTokensPrice
+| summarize InputCost = sum(InputCost), OutputCost = sum(OutputCost) by UserId
+| extend TotalCost = round((InputCost + OutputCost) / 1000, 4)
+| join kind=leftouter directory on UserId
+| extend User = coalesce(Upn, DisplayName, UserId)
+| project User, UserId, TotalCost
+| order by TotalCost desc

@@ -85,6 +85,26 @@
       estimate-prompt-tokens="false"
       remaining-tokens-header-name="x-ratelimit-remaining-tokens"
       tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+
+    <!-- ── 4. PER-USER TOKEN METRIC (chargeback signal) ─────────────────────
+         Emits prompt/completion/total token counts to App Insights with a
+         UserId dimension. Workspace-based App Insights -> Log Analytics.
+         azure-openai-emit-token-metric is INBOUND-ONLY (APIM rejects it in
+         outbound); it still emits after the response, so ModelName can read the
+         x-ms-served-model response header (null-safe fallback to the URL path). -->
+    <azure-openai-emit-token-metric namespace="genai">
+      <dimension name="UserId"         value="@((string)context.Variables["userId"])" />
+      <dimension name="TeamId"         value="@((string)context.Variables["teamId"])" />
+      <dimension name="ModelName"      value="@{
+          var resolved = context.Response?.Headers?.GetValueOrDefault("x-ms-served-model", "") ?? "";
+          if (!string.IsNullOrEmpty(resolved)) { return resolved; }
+          var m = System.Text.RegularExpressions.Regex.Match(context.Request.Url.Path ?? string.Empty, "deployments/([^/]+)");
+          return m.Success ? m.Groups[1].Value : "unknown";
+      }" />
+      <dimension name="Subscription ID" />
+      <dimension name="API ID" />
+      <dimension name="Operation ID" />
+    </azure-openai-emit-token-metric>
   </inbound>
 
   <backend>
@@ -93,17 +113,6 @@
 
   <outbound>
     <base />
-
-    <!-- ── 4. PER-USER TOKEN METRIC (chargeback signal) ────────────────────
-         Emits prompt/completion/total token counts to App Insights with a
-         UserId dimension. Workspace-based App Insights -> Log Analytics. -->
-    <azure-openai-emit-token-metric namespace="genai">
-      <dimension name="UserId"         value="@((string)context.Variables["userId"])" />
-      <dimension name="TeamId"         value="@((string)context.Variables["teamId"])" />
-      <dimension name="Subscription ID" />
-      <dimension name="API ID" />
-      <dimension name="Operation ID" />
-    </azure-openai-emit-token-metric>
 
     <!-- ── 5. STRUCTURED PER-USER RECORD -> LOG ANALYTICS ──────────────────
          A diagnostic setting on this API forwards traces to the workspace.

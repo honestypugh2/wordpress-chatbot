@@ -1,0 +1,6 @@
+[
+  { "UserId": "alice@county.gov", "DisplayName": "Alice Nguyen", "Upn": "alice@county.gov" },
+  { "UserId": "bob@county.gov", "DisplayName": "Bob Carter", "Upn": "bob@county.gov" },
+  { "UserId": "carol@county.gov", "DisplayName": "Carol Diaz", "Upn": "carol@county.gov" },
+  { "UserId": "probe@county.gov", "DisplayName": "Probe Account", "Upn": "probe@county.gov" }
+]

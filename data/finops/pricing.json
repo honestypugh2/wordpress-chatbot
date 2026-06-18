@@ -1,0 +1,9 @@
+[
+  { "Model": "model-router", "InputTokensPrice": 0.0025, "OutputTokensPrice": 0.01 },
+  { "Model": "gpt-4.1-2025-04-14", "InputTokensPrice": 0.002, "OutputTokensPrice": 0.008 },
+  { "Model": "gpt-4.1-mini-2025-04-14", "InputTokensPrice": 0.0004, "OutputTokensPrice": 0.0016 },
+  { "Model": "gpt-4o-mini-2024-07-18", "InputTokensPrice": 0.00015, "OutputTokensPrice": 0.0006 },
+  { "Model": "gpt-5-2025-08-07", "InputTokensPrice": 0.0025, "OutputTokensPrice": 0.01 },
+  { "Model": "gpt-5-mini-2025-08-07", "InputTokensPrice": 0.0004, "OutputTokensPrice": 0.0016 },
+  { "Model": "o3-2025-04-16", "InputTokensPrice": 0.002, "OutputTokensPrice": 0.008 }
+]

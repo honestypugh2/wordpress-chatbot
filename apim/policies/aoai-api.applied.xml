@@ -87,9 +87,22 @@
             estimate-prompt-tokens="false"
             remaining-tokens-header-name="x-ratelimit-remaining-tokens"
             tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+        <!-- Per-user token metrics. azure-openai-emit-token-metric is INBOUND-ONLY
+             (APIM rejects it in outbound), but it emits after the backend response,
+             so the ModelName expression can read the response header x-ms-served-model
+             (the model the router actually used, e.g. gpt-4.1-2025-04-14) - the pricing
+             key the FinOps query joins to PRICING_CL.Model. Null-safe: if the response/
+             header isn't available it falls back to the deployment in the URL path
+             (e.g. "model-router", which has its own PRICING_CL row). -->
         <azure-openai-emit-token-metric namespace="genai">
             <dimension name="UserId" value="@((string)context.Variables["userId"])" />
             <dimension name="TeamId" value="@((string)context.Variables["teamId"])" />
+            <dimension name="ModelName" value="@{
+                var served = context.Response?.Headers?.GetValueOrDefault("x-ms-served-model", "") ?? "";
+                if (!string.IsNullOrEmpty(served)) { return served; }
+                var m = System.Text.RegularExpressions.Regex.Match(context.Request.Url.Path ?? string.Empty, "deployments/([^/]+)");
+                return m.Success ? m.Groups[1].Value : "unknown";
+            }" />
             <dimension name="API ID" />
             <dimension name="Operation ID" />
             <dimension name="Subscription ID" />
