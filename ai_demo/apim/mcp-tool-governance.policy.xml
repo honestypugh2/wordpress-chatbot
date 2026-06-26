@@ -1,0 +1,155 @@
+<!-- ═══════════════════════════════════════════════════════════════════
+     MCP Tool Governance — APIM AI Gateway Policy
+     Applies to: an MCP server exposed as an API (path e.g. /mcp/parts)
+
+     THE IDEA: an MCP server is just an API. It speaks JSON-RPC 2.0 over HTTP, so
+     APIM governs it with the SAME controls it already applies to model calls —
+     authenticate the caller, check the requested tool against an allow-list, meter
+     the call, and emit the same observability signal. MCP does not need a new
+     governance model; it needs the one you already have.
+
+       agent / Foundry  ──▶  APIM (this policy)  ──▶  internal MCP server
+                              │ 1 authenticate (key / Entra JWT)
+                              │ 2 resolve identity (oid › x-user-id › sub)
+                              │ 3 parse JSON-RPC, read method + tool name
+                              │ 4 ALLOW-LIST approved tools (else 403)
+                              │ 5 rate-limit per user
+                              │ 6 emit metric + trace (same observability)
+                              └ 7 backend auth to the MCP server (MI / key)
+
+     A JSON-RPC tools/call body looks like:
+       {"jsonrpc":"2.0","id":1,"method":"tools/call",
+        "params":{"name":"lookup_part","arguments":{...}}}
+
+     Prereqs: APIM product requires a subscription key; an App Insights logger for
+     emit-metric/trace; a named backend "mcp-parts-backend" pointing at the MCP
+     server; (optional) Entra Named Values for the JWT path.
+     ═══════════════════════════════════════════════════════════════════ -->
+<policies>
+  <inbound>
+    <base />
+
+    <!-- ── 1. AUTHENTICATE ─────────────────────────────────────────────────
+         The APIM subscription key is required by the product (APIM enforces it
+         before this policy runs), so the MCP server never sees an anonymous call.
+         Optional, non-breaking Entra JWT path: when an Authorization bearer is
+         present, validate it and prefer its tamper-proof 'oid' for attribution.
+         Requires Named Values {{entra-openid-config}} and {{entra-audience}}. -->
+    <choose>
+      <when condition="@(context.Request.Headers.ContainsKey("Authorization"))">
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
+                      output-token-variable-name="jwt">
+          <openid-config url="{{entra-openid-config}}" />
+          <audiences>
+            <audience>{{entra-audience}}</audience>
+          </audiences>
+        </validate-jwt>
+      </when>
+    </choose>
+
+    <!-- ── 2. RESOLVE IDENTITY (precedence: JWT oid › x-user-id › sub) ──────
+         Same identity model as the model-call policies, so MCP usage attributes
+         to the same users/teams in the same dashboards. -->
+    <set-variable name="userId" value="@{
+        var jwt = context.Variables.ContainsKey("jwt")
+            ? context.Variables["jwt"] as Microsoft.Azure.ApiManagement.PolicyExpressions.Jwt
+            : null;
+        if (jwt != null && jwt.Claims.ContainsKey("oid")) {
+            return jwt.Claims.GetValueOrDefault("oid", "unknown");
+        }
+        var header = context.Request.Headers.GetValueOrDefault("x-user-id", "");
+        if (!string.IsNullOrEmpty(header)) { return header; }
+        return context.Subscription?.Id ?? "anonymous";
+    }" />
+    <set-variable name="teamId"
+      value="@(context.Request.Headers.GetValueOrDefault("x-team-id", "unassigned"))" />
+
+    <!-- ── 3. PARSE JSON-RPC (read method + requested tool) ─────────────────
+         preserveContent:true so the backend still receives the original body. -->
+    <set-variable name="mcpMethod" value="@{
+        try {
+            var b = context.Request.Body?.As<JObject>(preserveContent: true);
+            return b? ["method"]?.ToString() ?? "";
+        } catch { return ""; }
+    }" />
+    <set-variable name="mcpTool" value="@{
+        try {
+            var b = context.Request.Body?.As<JObject>(preserveContent: true);
+            return b? ["params"]? ["name"]?.ToString() ?? "";
+        } catch { return ""; }
+    }" />
+
+    <!-- ── 4. TOOL ALLOW-LIST (the core MCP control) ───────────────────────
+         Only approved tools may be invoked. Any tools/call for a tool not on the
+         list is rejected at the gateway with 403 — the MCP server is never reached.
+         tools/list, initialize, ping, etc. pass through unchanged. -->
+    <choose>
+      <when condition="@(((string)context.Variables["mcpMethod"]) == "tools/call"
+                       && !(new [] { "lookup_part", "search_parts" })
+                            .Contains((string)context.Variables["mcpTool"]))">
+        <return-response>
+          <set-status code="403" reason="Tool not allowed" />
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body>@("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32601,\"message\":\"Tool '"
+            + (string)context.Variables["mcpTool"]
+            + "' is not on the approved MCP allow-list\"}}")</set-body>
+        </return-response>
+      </when>
+    </choose>
+
+    <!-- ── 5. RATE LIMIT per user (abuse / runaway-agent guardrail) ─────────-->
+    <rate-limit-by-key calls="60" renewal-period="60"
+      counter-key="@((string)context.Variables["userId"])"
+      remaining-calls-header-name="x-ratelimit-remaining-calls" />
+
+    <!-- ── 6. METER + OBSERVE (same observability as model calls) ───────────
+         One custom metric per tool invocation, namespace 'genai' so MCP usage
+         lands alongside model-token metrics in the same App Insights / Log
+         Analytics dashboards. -->
+    <emit-metric name="McpToolCall" value="1" namespace="genai">
+      <dimension name="ToolName" value="@((string)context.Variables["mcpTool"])" />
+      <dimension name="Method"   value="@((string)context.Variables["mcpMethod"])" />
+      <dimension name="UserId"   value="@((string)context.Variables["userId"])" />
+      <dimension name="TeamId"   value="@((string)context.Variables["teamId"])" />
+      <dimension name="ApiName"  value="@(context.Api.Name)" />
+    </emit-metric>
+
+    <!-- ── 7. BACKEND ROUTING + AUTH TO THE MCP SERVER ─────────────────────
+         The (possibly remote / 3rd-party) MCP server is reached only through this
+         named backend, so it can be pinned, rotated, and audited centrally.
+         Authenticate to it with managed identity (preferred) or a Key Vault-backed
+         Named Value — the caller never holds the MCP server's credential. -->
+    <set-backend-service backend-id="mcp-parts-backend" />
+    <!-- <authentication-managed-identity resource="<mcp-app-id-uri>" /> -->
+    <!-- <set-header name="Authorization" exists-action="override">
+           <value>@("Bearer " + "{{mcp-backend-token}}")</value>
+         </set-header> -->
+  </inbound>
+
+  <backend>
+    <base />
+  </backend>
+
+  <outbound>
+    <base />
+
+    <!-- ── 8. STRUCTURED RECORD → LOG ANALYTICS ────────────────────────────
+         A diagnostic setting on this API forwards traces to the workspace; this
+         is the per-call MCP audit record (who called which tool, and the result
+         status), the MCP analogue of the per-user model-usage trace. -->
+    <trace source="mcp-tool-governance" severity="information">
+      <message>@("mcp-tool-call")</message>
+      <metadata name="userId"   value="@((string)context.Variables["userId"])" />
+      <metadata name="teamId"   value="@((string)context.Variables["teamId"])" />
+      <metadata name="method"   value="@((string)context.Variables["mcpMethod"])" />
+      <metadata name="tool"     value="@((string)context.Variables["mcpTool"])" />
+      <metadata name="status"   value="@(context.Response.StatusCode.ToString())" />
+    </trace>
+  </outbound>
+
+  <on-error>
+    <base />
+  </on-error>
+</policies>

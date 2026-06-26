@@ -24,10 +24,12 @@ openai_client = project.get_openai_client()
 
 
 def call_with_routing_audit(query: str, complexity_tag: str = "auto") -> dict:
-    """Returns routing metadata for FinOps logging."""
-    system_prompt = "You are a Microchip Technology technical assistant."
-    if complexity_tag == "high":
-        system_prompt += ' {"route":"high-complexity"}'
+    """Returns routing metadata for FinOps logging.
+
+    complexity_tag is only a label recorded in the audit record. The Model Router
+    chooses the underlying model automatically from the prompt content.
+    """
+    system_prompt = "You are a Custom Technology technical assistant."
 
     response = openai_client.responses.create(
         model=os.environ["MODEL_ROUTER_DEPLOYMENT"],
@@ -50,3 +52,20 @@ def call_with_routing_audit(query: str, complexity_tag: str = "auto") -> dict:
     # In production: emit to Application Insights or Azure Monitor custom metrics
     print(json.dumps(routing_record, indent=2))
     return routing_record
+
+
+if __name__ == "__main__":
+    # A trivial query — the Router picks a low-cost model (gpt-4.1-mini).
+    print("=== Simple query (auto) ===")
+    call_with_routing_audit(
+        "What does the acronym PIC stand for?",
+    )
+
+    # A complex query — the Router picks a stronger model (gpt-4.1).
+    print("\n=== Complex query (high) ===")
+    call_with_routing_audit(
+        "Compare the PIC32MZ and PIC32MX families across CPU architecture, "
+        "peripheral set, and power management, and recommend one for a "
+        "battery-powered industrial sensor.",
+        complexity_tag="high",
+    )

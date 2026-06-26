@@ -55,17 +55,15 @@ def create_with_retry(max_retries: int = 4, base_delay: float = 1.0, **kwargs):
 def call_model_router(user_query: str, complexity: str = "auto") -> None:
     """
     Call the Custom Model Router endpoint via azure-ai-projects 2.x.
-    complexity: "auto" (router decides), "high" (forces o3 routing)
+    complexity: a label for the demo output only. Azure Model Router decides
+    which underlying model to use automatically from the prompt content — there
+    is no tag or parameter that forces a specific model.
     """
 
-    # System prompt signals complexity to the Model Router.
-    # The {"route":"high-complexity"} tag triggers o3 routing when set.
     system_content = (
         "You are a Custom Technology technical support assistant. "
         "Answer questions about Custom products, datasheets, and design guidance."
     )
-    if complexity == "high":
-        system_content += ' {"route":"high-complexity"}'
 
     # Responses API (Agents v2) — single input string, no messages list needed
     response = create_with_retry(
