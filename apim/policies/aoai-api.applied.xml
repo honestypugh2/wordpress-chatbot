@@ -21,19 +21,88 @@
   external Redis cache with the RediSearch module. They are added in phase 2
   once Azure Managed Redis (wpcounty-amr-mro5df) is provisioned and registered
   as an APIM external cache.
+
+  PER-USER COST ATTRIBUTION (added): resolves a per-user identity and emits it
+  as a UserId dimension so chargeback/showback can be done per individual user,
+  not just per subscription/team. Identity precedence:
+    1. Entra ID 'oid' claim  (validated when an Authorization bearer is present)
+    2. x-user-id header      (set by a TRUSTED server-side proxy only)
+    3. subscription id       (per-consumer fallback)
+
+  !! NOT-YET-APPLIED PREREQUISITE (Entra JWT path) !!
+  The <validate-jwt> block below references two Named Values,
+  {{entra-openid-config}} and {{entra-audience}}. APIM resolves Named-Value
+  references at apply time, so this policy can only be pushed to the live API
+  AFTER those Named Values exist. {{entra-audience}} requires an Entra ID **app
+  registration** for this API (Application ID URI / client id). The environment
+  that owns this subscription may lack app-
+  registration privileges, so this step must be completed in an Azure
+  subscription/tenant where the operator has admin rights for app registrations.
+  Until then, the LIVE policy runs header + subscription attribution only (the
+  <choose> makes the JWT path no-op when no Authorization header is present, so
+  enabling it is non-breaking for existing api-key callers).
 -->
 <policies>
     <inbound>
         <base />
         <set-backend-service backend-id="aoai-backend" />
         <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+
+        <!-- Resolve per-user identity (header > subscription). The optional
+             validate-jwt block below overrides this with the Entra 'oid'. -->
+        <set-variable name="userId" value="@{
+            var header = context.Request.Headers.GetValueOrDefault("x-user-id", "");
+            if (!string.IsNullOrEmpty(header)) { return header; }
+            return context.Subscription?.Id ?? context.Request.IpAddress ?? "anonymous";
+        }" />
+        <set-variable name="teamId"
+            value="@(context.Request.Headers.GetValueOrDefault("x-team-id", "unassigned"))" />
+        <set-variable name="requestId"
+            value="@(context.Request.Headers.GetValueOrDefault("x-request-id", Guid.NewGuid().ToString()))" />
+
+        <!-- Entra ID SSO attribution (non-breaking): only runs when the caller
+             presents an Authorization bearer token. When it does, the token is
+             validated and userId is overridden with the tamper-proof 'oid'.
+             api-key-only callers (no Authorization header) skip this entirely.
+             Requires Named Values {{entra-openid-config}} and {{entra-audience}};
+             see the NOT-YET-APPLIED PREREQUISITE note in the header. -->
+        <choose>
+            <when condition="@(context.Request.Headers.ContainsKey("Authorization"))">
+                <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
+                              failed-validation-error-message="Invalid or missing Entra ID token."
+                              output-token-variable-name="jwt">
+                    <openid-config url="{{entra-openid-config}}" />
+                    <audiences>
+                        <audience>{{entra-audience}}</audience>
+                    </audiences>
+                </validate-jwt>
+                <set-variable name="userId"
+                    value="@(((Jwt)context.Variables["jwt"]).Claims.GetValueOrDefault("oid", (string)context.Variables["userId"]))" />
+            </when>
+        </choose>
+
         <azure-openai-token-limit
-            counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+            counter-key="@((string)context.Variables["userId"])"
             tokens-per-minute="20000"
             estimate-prompt-tokens="false"
             remaining-tokens-header-name="x-ratelimit-remaining-tokens"
             tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+        <!-- Per-user token metrics. azure-openai-emit-token-metric is INBOUND-ONLY
+             (APIM rejects it in outbound), but it emits after the backend response,
+             so the ModelName expression can read the response header x-ms-served-model
+             (the model the router actually used, e.g. gpt-4.1-2025-04-14) - the pricing
+             key the FinOps query joins to PRICING_CL.Model. Null-safe: if the response/
+             header isn't available it falls back to the deployment in the URL path
+             (e.g. "model-router", which has its own PRICING_CL row). -->
         <azure-openai-emit-token-metric namespace="genai">
+            <dimension name="UserId" value="@((string)context.Variables["userId"])" />
+            <dimension name="TeamId" value="@((string)context.Variables["teamId"])" />
+            <dimension name="ModelName" value="@{
+                var served = context.Response?.Headers?.GetValueOrDefault("x-ms-served-model", "") ?? "";
+                if (!string.IsNullOrEmpty(served)) { return served; }
+                var m = System.Text.RegularExpressions.Regex.Match(context.Request.Url.Path ?? string.Empty, "deployments/([^/]+)");
+                return m.Success ? m.Groups[1].Value : "unknown";
+            }" />
             <dimension name="API ID" />
             <dimension name="Operation ID" />
             <dimension name="Subscription ID" />
@@ -44,6 +113,10 @@
     </backend>
     <outbound>
         <base />
+        <!-- Echo the resolved identity so the client can reconcile its record. -->
+        <set-header name="x-user-id" exists-action="override">
+            <value>@((string)context.Variables["userId"])</value>
+        </set-header>
     </outbound>
     <on-error>
         <base />

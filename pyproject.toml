@@ -41,6 +41,11 @@ functions = [
     # The function host reuses the shared `app` orchestrator package.
     "azure-functions>=1.21,<2.0",
 ]
+finops = [
+    # Seeding FinOps lookup tables (PRICING_CL/USER_QUOTA_CL/USER_DIRECTORY_CL)
+    # via the Logs Ingestion API — see scripts/seed_finops_tables.py.
+    "azure-monitor-ingestion>=1.0,<2.0",
+]
 
 [dependency-groups]
 # UV-native dev dependency group (uv ~= 0.11.19).

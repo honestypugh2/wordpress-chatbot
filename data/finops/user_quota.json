@@ -1,0 +1,6 @@
+[
+  { "UserId": "alice@county.gov", "CostQuota": 25.0 },
+  { "UserId": "bob@county.gov", "CostQuota": 25.0 },
+  { "UserId": "carol@county.gov", "CostQuota": 10.0 },
+  { "UserId": "probe@county.gov", "CostQuota": 5.0 }
+]

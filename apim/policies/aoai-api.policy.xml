@@ -25,13 +25,55 @@
         <base />
         <set-backend-service backend-id="aoai-backend" />
         <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+
+        <!-- ── PER-USER IDENTITY (Entra oid > x-user-id > subscription) ─────────
+             Entra ID 'oid' is the production identity; x-user-id is a trusted
+             server-side-proxy fallback for demo/dev only. The JWT path is
+             non-breaking: it runs only when an Authorization bearer is present.
+             Requires Named Values {{entra-openid-config}} and {{entra-audience}}. -->
+        <set-variable name="userId" value="@{
+            var header = context.Request.Headers.GetValueOrDefault("x-user-id", "");
+            if (!string.IsNullOrEmpty(header)) { return header; }
+            return context.Subscription?.Id ?? context.Request.IpAddress ?? "anonymous";
+        }" />
+        <set-variable name="teamId"
+            value="@(context.Request.Headers.GetValueOrDefault("x-team-id", "unassigned"))" />
+        <choose>
+            <when condition="@(context.Request.Headers.ContainsKey("Authorization"))">
+                <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
+                              failed-validation-error-message="Invalid or missing Entra ID token."
+                              output-token-variable-name="jwt">
+                    <openid-config url="{{entra-openid-config}}" />
+                    <audiences>
+                        <audience>{{entra-audience}}</audience>
+                    </audiences>
+                </validate-jwt>
+                <set-variable name="userId"
+                    value="@(((Jwt)context.Variables["jwt"]).Claims.GetValueOrDefault("oid", (string)context.Variables["userId"]))" />
+            </when>
+        </choose>
+
         <azure-openai-token-limit
-            counter-key="@(context.Subscription?.Id ?? context.Request.IpAddress)"
+            counter-key="@((string)context.Variables["userId"])"
             tokens-per-minute="20000"
             estimate-prompt-tokens="false"
             remaining-tokens-header-name="x-ratelimit-remaining-tokens"
             tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+        <!-- Per-user token metrics. azure-openai-emit-token-metric is INBOUND-ONLY
+             (APIM rejects it in outbound), but it emits after the backend response, so
+             the ModelName expression can read the response header x-ms-served-model (the
+             model the router actually used) - the pricing key joined to PRICING_CL.Model.
+             Null-safe: on a semantic-cache hit (or before the response) that header is
+             absent, so ModelName falls back to the deployment in the URL path. -->
         <azure-openai-emit-token-metric namespace="genai">
+            <dimension name="UserId" value="@((string)context.Variables["userId"])" />
+            <dimension name="TeamId" value="@((string)context.Variables["teamId"])" />
+            <dimension name="ModelName" value="@{
+                var served = context.Response?.Headers?.GetValueOrDefault("x-ms-served-model", "") ?? "";
+                if (!string.IsNullOrEmpty(served)) { return served; }
+                var m = System.Text.RegularExpressions.Regex.Match(context.Request.Url.Path ?? string.Empty, "deployments/([^/]+)");
+                return m.Success ? m.Groups[1].Value : "unknown";
+            }" />
             <dimension name="API ID" />
             <dimension name="Operation ID" />
             <dimension name="Subscription ID" />
@@ -49,6 +91,10 @@
     <outbound>
         <azure-openai-semantic-cache-store duration="3600" />
         <base />
+        <!-- Echo the resolved identity so the client can reconcile its record. -->
+        <set-header name="x-user-id" exists-action="override">
+            <value>@((string)context.Variables["userId"])</value>
+        </set-header>
     </outbound>
     <on-error>
         <base />

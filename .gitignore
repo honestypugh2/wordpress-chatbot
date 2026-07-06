@@ -144,3 +144,6 @@ tests/*.json
 # Logs / local data
 *.log
 data/local/
+
+
+*.drawio

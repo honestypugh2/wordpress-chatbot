@@ -1,0 +1,137 @@
+<!-- ═══════════════════════════════════════════════════════════════════
+     Per-User Cost Attribution — APIM AI Gateway Policy
+     Applies to: Azure OpenAI API (Foundry-backed, path /openai)
+
+     This extends the team-level attribution in apim_policy_example.xml down to
+     the *individual user*. APIM is the right place for this because it is the one
+     hop that sees BOTH the caller identity AND the model's token usage, and the
+     caller cannot tamper with what APIM emits.
+
+     Identity is resolved with a clear precedence (strongest first):
+       1. Entra ID JWT  — 'oid' (object id) claim from a validated bearer token.
+       2. Custom header — x-user-id (app-managed user id; use behind a trusted
+                          server-side proxy so end users can't spoof it).
+       3. Subscription  — falls back to the APIM subscription id (per-consumer).
+
+     Emission to Azure Monitor / Log Analytics happens two ways:
+       A. azure-openai-emit-token-metric  -> Application Insights custom metric
+          with a UserId dimension. With a *workspace-based* App Insights resource
+          these land in Log Analytics (AppMetrics) for per-user dashboards.
+       B. trace (verbosity=information)   -> structured per-user record in the
+          ApiManagementGatewayLogs / App Insights traces table when an APIM
+          diagnostic setting points at the Log Analytics workspace.
+
+     Prereqs: APIM tier with AI-gateway support; an App Insights logger named
+     'appinsights'; (for JWT) the Entra app/audience Named Values; an APIM
+     diagnostic setting forwarding to Log Analytics.
+     ═══════════════════════════════════════════════════════════════════ -->
+<policies>
+  <inbound>
+    <base />
+    <set-backend-service backend-id="aoai-backend" />
+    <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+
+    <!-- ── 1. VALIDATE ENTRA ID TOKEN (non-breaking) ───────────────────────
+         Only runs when the caller presents an Authorization bearer token, so
+         api-key-only callers are unaffected. When a token is present it is
+         validated and 'oid' is used for attribution below.
+         Requires Named Values:
+           {{entra-openid-config}}  e.g. https://login.microsoftonline.com/<tenant>/v2.0/.well-known/openid-configuration
+           {{entra-audience}}       the API's Application ID URI / client id.
+         NOTE: {{entra-audience}} needs an Entra app registration — see README. -->
+    <choose>
+      <when condition="@(context.Request.Headers.ContainsKey("Authorization"))">
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
+                      output-token-variable-name="jwt">
+          <openid-config url="{{entra-openid-config}}" />
+          <audiences>
+            <audience>{{entra-audience}}</audience>
+          </audiences>
+        </validate-jwt>
+      </when>
+    </choose>
+
+    <!-- ── 2. RESOLVE USER IDENTITY (precedence: JWT oid > header > sub) ────
+         context.Variables["jwt"] only exists when validate-jwt ran above. -->
+    <set-variable name="userId" value="@{
+        var jwt = context.Variables.ContainsKey("jwt")
+            ? context.Variables["jwt"] as Microsoft.Azure.ApiManagement.PolicyExpressions.Jwt
+            : null;
+        if (jwt != null && jwt.Claims.ContainsKey("oid"))
+        {
+            return jwt.Claims.GetValueOrDefault("oid", "unknown");
+        }
+        var header = context.Request.Headers.GetValueOrDefault("x-user-id", "");
+        if (!string.IsNullOrEmpty(header))
+        {
+            return header;
+        }
+        return context.Subscription?.Id ?? "anonymous";
+    }" />
+
+    <!-- Optional team/department roll-up dimension. -->
+    <set-variable name="teamId"
+      value="@(context.Request.Headers.GetValueOrDefault("x-team-id", "unassigned"))" />
+
+    <!-- Correlate the gateway record with the client record. -->
+    <set-variable name="requestId"
+      value="@(context.Request.Headers.GetValueOrDefault("x-request-id", Guid.NewGuid().ToString()))" />
+
+    <!-- ── 3. PER-USER TOKEN RATE LIMIT (optional cost guardrail) ───────────
+         Meters tokens-per-minute per *user*, not just per subscription. -->
+    <azure-openai-token-limit
+      counter-key="@((string)context.Variables["userId"])"
+      tokens-per-minute="20000"
+      estimate-prompt-tokens="false"
+      remaining-tokens-header-name="x-ratelimit-remaining-tokens"
+      tokens-consumed-header-name="x-ratelimit-consumed-tokens" />
+
+    <!-- ── 4. PER-USER TOKEN METRIC (chargeback signal) ─────────────────────
+         Emits prompt/completion/total token counts to App Insights with a
+         UserId dimension. Workspace-based App Insights -> Log Analytics.
+         azure-openai-emit-token-metric is INBOUND-ONLY (APIM rejects it in
+         outbound); it still emits after the response, so ModelName can read the
+         x-ms-served-model response header (null-safe fallback to the URL path). -->
+    <azure-openai-emit-token-metric namespace="genai">
+      <dimension name="UserId"         value="@((string)context.Variables["userId"])" />
+      <dimension name="TeamId"         value="@((string)context.Variables["teamId"])" />
+      <dimension name="ModelName"      value="@{
+          var resolved = context.Response?.Headers?.GetValueOrDefault("x-ms-served-model", "") ?? "";
+          if (!string.IsNullOrEmpty(resolved)) { return resolved; }
+          var m = System.Text.RegularExpressions.Regex.Match(context.Request.Url.Path ?? string.Empty, "deployments/([^/]+)");
+          return m.Success ? m.Groups[1].Value : "unknown";
+      }" />
+      <dimension name="Subscription ID" />
+      <dimension name="API ID" />
+      <dimension name="Operation ID" />
+    </azure-openai-emit-token-metric>
+  </inbound>
+
+  <backend>
+    <base />
+  </backend>
+
+  <outbound>
+    <base />
+
+    <!-- ── 5. STRUCTURED PER-USER RECORD -> LOG ANALYTICS ──────────────────
+         A diagnostic setting on this API forwards traces to the workspace.
+         Token counts come from the model response body usage object. -->
+    <trace source="per-user-cost" severity="information">
+      <message>@("per-user-usage")</message>
+      <metadata name="requestId" value="@((string)context.Variables["requestId"])" />
+      <metadata name="userId"    value="@((string)context.Variables["userId"])" />
+      <metadata name="teamId"    value="@((string)context.Variables["teamId"])" />
+      <metadata name="model"     value="@(context.Response.Headers.GetValueOrDefault("x-ms-deployment-name", ""))" />
+    </trace>
+
+    <!-- Echo identity back so the client can reconcile its local record. -->
+    <set-header name="x-user-id" exists-action="override">
+      <value>@((string)context.Variables["userId"])</value>
+    </set-header>
+  </outbound>
+
+  <on-error>
+    <base />
+  </on-error>
+</policies>

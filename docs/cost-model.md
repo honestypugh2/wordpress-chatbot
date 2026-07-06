@@ -93,3 +93,19 @@ calculator to turn this into currency.
 
 See trade-offs in [docs/retrieval-patterns.md](docs/retrieval-patterns.md) and the
 SKU defaults in [infra/main.bicep](infra/main.bicep).
+
+---
+
+## 5. Alternative: secure-baseline cost model
+
+The sections above model the **lean** topology (public APIM, no edge). This section
+mirrors the **secure-baseline** option, which adds an **Application Gateway
+WAF_v2 edge**, **private endpoints**, **DNS/networking**, and a **Defender/governance**
+allowance, and assumes **API Management Basic**. It is the costed counterpart to the
+[advanced-architecture-apim-landing-zone](diagrams/advanced-architecture-apim-landing-zone.drawio)
+diagram. Use this option when secure ingress + private connectivity are required.
+
+> **Indicative list prices** for planning comparison only — confirm in the
+> [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for
+> your region, currency, and commitment. All content is synthetic.
+
